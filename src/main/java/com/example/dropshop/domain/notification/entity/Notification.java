@@ -35,6 +35,7 @@ class Notification {
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
+  @Column(nullable = false)
   private Long userId;
 
   @Enumerated(EnumType.STRING)
@@ -45,6 +46,7 @@ class Notification {
   @Enumerated(EnumType.STRING)
   private NotificationStatus status; // UNREAD, READ
 
+  @Column(nullable = false)
   private Long productId;
 
   @CreatedDate

@@ -37,8 +37,10 @@ public class Queue {
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
+  @Column(nullable = false)
   private Long userId;
 
+  @Column(nullable = false)
   private Long dropId;
 
   @Enumerated(EnumType.STRING)
