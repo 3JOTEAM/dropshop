@@ -11,15 +11,6 @@ import com.example.dropshop.domain.order.facade.OrderFacadeService;
 import com.example.dropshop.domain.product.entity.Product;
 import com.example.dropshop.domain.product.enums.ProductStatus;
 import com.example.dropshop.domain.product.service.ProductDomainFacadeService;
-import com.example.dropshop.domain.drops.entity.Drops;
-import com.example.dropshop.domain.drops.repository.DropsRepository;
-import java.util.Collection;
-import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -40,10 +31,10 @@ public class DropsFacadeService {
    */
   @Transactional
   public DropResponse createSellerDrop(
-      Long sellerId,
-      boolean sellerApproved,
-      boolean sellerVerified,
-      DropCreateRequest request
+    Long sellerId,
+    boolean sellerApproved,
+    boolean sellerVerified,
+    DropCreateRequest request
   ) {
     productDomainFacadeService.validateSellerState(sellerApproved, sellerVerified);
 
@@ -60,11 +51,11 @@ public class DropsFacadeService {
    */
   @Transactional
   public DropResponse updateSellerDrop(
-      Long dropId,
-      Long sellerId,
-      boolean sellerApproved,
-      boolean sellerVerified,
-      DropUpdateRequest request
+    Long dropId,
+    Long sellerId,
+    boolean sellerApproved,
+    boolean sellerVerified,
+    DropUpdateRequest request
   ) {
     productDomainFacadeService.validateSellerState(sellerApproved, sellerVerified);
 
@@ -81,10 +72,10 @@ public class DropsFacadeService {
    */
   @Transactional
   public void deleteSellerDrop(
-      Long dropId,
-      Long sellerId,
-      boolean sellerApproved,
-      boolean sellerVerified
+    Long dropId,
+    Long sellerId,
+    boolean sellerApproved,
+    boolean sellerVerified
   ) {
     productDomainFacadeService.validateSellerState(sellerApproved, sellerVerified);
 
@@ -98,7 +89,7 @@ public class DropsFacadeService {
 
     dropsService.delete(drops);
 
-     if (!dropsService.existsOngoingDropForProduct(product.getId())) {
+    if (!dropsService.existsOngoingDropForProduct(product.getId())) {
       productDomainFacadeService.updateStatusByDrop(product, ProductStatus.HIDDEN);
     }
   }
@@ -108,10 +99,10 @@ public class DropsFacadeService {
    */
   @Transactional
   public DropResponse stopSellerDrop(
-      Long dropId,
-      Long sellerId,
-      boolean sellerApproved,
-      boolean sellerVerified
+    Long dropId,
+    Long sellerId,
+    boolean sellerApproved,
+    boolean sellerVerified
   ) {
     productDomainFacadeService.validateSellerState(sellerApproved, sellerVerified);
 
@@ -137,31 +128,9 @@ public class DropsFacadeService {
   }
 
   private void validateDuplicatedOngoingDrop(Long productId) {
-     if (dropsService.existsOngoingDropForProduct(productId)) {
+    if (dropsService.existsOngoingDropForProduct(productId)) {
       throw new DropsException(ErrorCode.DROP_ALREADY_EXISTS);
     }
-  }
-
-  /**
-   * 특정 상품의 최신 드랍 1건을 조회한다.
-   */
-  @Transactional(readOnly = true)
-  public Optional<Drops> findLatestDropByProductId(Long productId) {
-    return dropsRepository.findTopByProductIdOrderByStartAtDesc(productId);
-  }
-
-  /**
-   * 상품별 최신 드랍 맵을 조회한다.
-   */
-  @Transactional(readOnly = true)
-  public Map<Long, Drops> findLatestDropsByProductIds(Collection<Long> productIds) {
-    List<Drops> dropsList = dropsRepository.findAllByProductIdInOrderByProductIdAscStartAtDesc(productIds);
-    Map<Long, Drops> latestDrops = new HashMap<>();
-    for (Drops drops : dropsList) {
-      Long productId = drops.getProduct().getId();
-      latestDrops.putIfAbsent(productId, drops);
-    }
-    return latestDrops;
   }
 }
 
