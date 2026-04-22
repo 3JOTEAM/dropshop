@@ -61,6 +61,36 @@ public class OrderFacadeService {
   }
 
   /**
+   * 결제 도메인에서 사용할 주문을 조회한다.
+   */
+  @Transactional(readOnly = true)
+  public Order findOrderForPayment(Long orderId, String email) {
+    return orderService.findOrderById(orderId, getUserIdByEmail(email));
+  }
+
+  /**
+   * 웹훅 등 내부 연동에서 사용할 주문을 조회한다.
+   */
+  @Transactional(readOnly = true)
+  public Order findOrderForPaymentWebhook(Long orderId) {
+    return orderService.findOrderById(orderId);
+  }
+
+  /**
+   * 결제 성공에 따른 주문 완료 처리.
+   */
+  public Order payOrderByPayment(Order order) {
+    return orderService.payOrder(order);
+  }
+
+  /**
+   * 결제 실패에 따른 주문 취소 및 재고 복원 처리.
+   */
+  public Order cancelOrderByPaymentFailure(Order order) {
+    return orderService.cancelOrderAndRestoreStock(order);
+  }
+
+  /**
    * 주문 목록 조회.
    */
   @Transactional(readOnly = true)

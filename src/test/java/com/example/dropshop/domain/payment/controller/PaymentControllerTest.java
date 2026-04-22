@@ -12,12 +12,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.example.dropshop.domain.order.enums.OrderStatus;
 import com.example.dropshop.domain.payment.dto.request.PaymentConfirmRequest;
 import com.example.dropshop.domain.payment.dto.request.PaymentPrepareRequest;
+import com.example.dropshop.domain.payment.dto.request.PaymentWebhookRequest;
 import com.example.dropshop.domain.payment.dto.response.PaymentConfirmResponse;
 import com.example.dropshop.domain.payment.dto.response.PaymentPortOneRequestResponse;
 import com.example.dropshop.domain.payment.dto.response.PaymentPrepareResponse;
 import com.example.dropshop.domain.payment.entity.Payment;
 import com.example.dropshop.domain.payment.enums.PaymentMethod;
 import com.example.dropshop.domain.payment.facade.PaymentFacadeService;
+import java.util.Map;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -119,6 +121,43 @@ class PaymentControllerTest {
         .andExpect(jsonPath("$.data.transactionId").value("tx-123"))
         .andExpect(jsonPath("$.data.paymentStatus").value("COMPLETED"))
         .andExpect(jsonPath("$.data.orderStatus").value("PAID"));
+  }
+
+  @Test
+  @DisplayName("PortOne 웹훅 처리 성공")
+  void handleWebhook_success() throws Exception {
+    PaymentWebhookRequest request = new PaymentWebhookRequest();
+    ReflectionTestUtils.setField(request, "id", "payment-test-123");
+
+    mockMvc.perform(post("/api/payments/webhook")
+            .contentType(APPLICATION_JSON)
+            .content(objectMapper.writeValueAsString(request)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.success").value(true));
+  }
+
+  @Test
+  @DisplayName("PortOne 웹훅 처리 성공 - data.paymentId 형태도 허용")
+  void handleWebhook_dataPaymentId_success() throws Exception {
+    PaymentWebhookRequest request = new PaymentWebhookRequest();
+    ReflectionTestUtils.setField(request, "data", Map.of("paymentId", "payment-test-123"));
+
+    mockMvc.perform(post("/api/payments/webhook")
+            .contentType(APPLICATION_JSON)
+            .content(objectMapper.writeValueAsString(request)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.success").value(true));
+  }
+
+  @Test
+  @DisplayName("결제 준비 실패 - 필수값이 없으면 400을 반환한다")
+  @WithMockUser(username = "test@test.com")
+  void preparePayment_validationFail() throws Exception {
+    mockMvc.perform(post("/api/payments/prepare")
+            .contentType(APPLICATION_JSON)
+            .content("{}"))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.success").value(false));
   }
 
   private Payment createPayment() {

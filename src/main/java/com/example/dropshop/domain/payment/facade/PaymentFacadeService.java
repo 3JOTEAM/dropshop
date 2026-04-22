@@ -3,6 +3,7 @@ package com.example.dropshop.domain.payment.facade;
 import com.example.dropshop.domain.order.entity.Order;
 import com.example.dropshop.domain.payment.dto.request.PaymentConfirmRequest;
 import com.example.dropshop.domain.payment.dto.request.PaymentPrepareRequest;
+import com.example.dropshop.domain.payment.dto.request.PaymentWebhookRequest;
 import com.example.dropshop.domain.payment.dto.response.PaymentConfirmResponse;
 import com.example.dropshop.domain.payment.dto.response.PaymentPortOneRequestResponse;
 import com.example.dropshop.domain.payment.dto.response.PaymentPrepareResponse;
@@ -71,5 +72,12 @@ public class PaymentFacadeService {
     Payment payment = paymentService.confirmPayment(paymentId, email, request.getPortOnePaymentId());
     Order order = paymentService.getOrder(payment.getOrderId(), email);
     return PaymentConfirmResponse.of(payment, order.getStatus());
+  }
+
+  /**
+   * PortOne 웹훅을 처리한다.
+   */
+  public void handleWebhook(PaymentWebhookRequest request) {
+    paymentService.handleWebhook(request.extractPortOnePaymentId());
   }
 }

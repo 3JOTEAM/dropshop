@@ -49,3 +49,9 @@ out/
 !secret.yml.example
 !src/main/resources/application.yml
 !src/main/resources/*.sample.yml
+
+# Local PortOne frontend test pages
+/src/main/java/com/example/dropshop/common/config/TestDataInitializer.java
+/src/main/java/com/example/dropshop/domain/payment/controller/PaymentTestPageController.java
+/src/main/resources/static/payments/test.html
+/src/main/resources/static/payments/redirect.html

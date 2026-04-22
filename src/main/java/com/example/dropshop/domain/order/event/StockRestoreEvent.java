@@ -10,6 +10,6 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class StockRestoreEvent {
 
-  private final Long productId;
+  private final Long dropId;
   private final int quantity;
 }

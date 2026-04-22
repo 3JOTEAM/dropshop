@@ -227,7 +227,7 @@ class OrderServiceTest {
     verify(eventPublisher, times(1)).publishEvent(eventCaptor.capture());
 
     StockRestoreEvent event = eventCaptor.getValue();
-    assertThat(event.getProductId()).isEqualTo(productId);
+    assertThat(event.getDropId()).isEqualTo(dropId);
   }
 
   @Test
@@ -295,7 +295,7 @@ class OrderServiceTest {
     verify(eventPublisher, times(1)).publishEvent(eventCaptor.capture());
 
     StockRestoreEvent event = eventCaptor.getValue();
-    assertThat(event.getProductId()).isEqualTo(productId);
+    assertThat(event.getDropId()).isEqualTo(dropId);
     assertThat(event.getQuantity()).isEqualTo(1);
   }
 

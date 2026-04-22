@@ -1,14 +1,15 @@
 package com.example.dropshop.domain.order.service;
 
 import com.example.dropshop.common.exception.ErrorCode;
-import com.example.dropshop.domain.drops.service.DropsFacadeService;
 import com.example.dropshop.domain.order.entity.Order;
 import com.example.dropshop.domain.order.entity.OrderItem;
 import com.example.dropshop.domain.order.exception.OrderException;
 import com.example.dropshop.domain.order.enums.OrderStatus;
+import com.example.dropshop.domain.order.event.StockRestoreEvent;
 import com.example.dropshop.domain.order.exception.OrderException;
 import com.example.dropshop.domain.order.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -26,7 +27,7 @@ import java.util.List;
 public class OrderService {
 
   private final OrderRepository orderRepository;
-  private final DropsFacadeService dropsFacadeService;
+  private final ApplicationEventPublisher eventPublisher;
 
   /**
    * 주문 생성.
@@ -61,6 +62,15 @@ public class OrderService {
   }
 
   /**
+   * 내부 도메인 연동용 주문 단건 조회.
+   */
+  @Transactional(readOnly = true)
+  public Order findOrderById(Long orderId) {
+    return orderRepository.findById(orderId)
+        .orElseThrow(() -> new OrderException(ErrorCode.ORDER_NOT_FOUND));
+  }
+
+  /**
    * 목록 조회.
    */
   @Transactional(readOnly = true)
@@ -84,6 +94,24 @@ public class OrderService {
     Order order = orderRepository.findByIdAndUserId(orderId, userId)
         .orElseThrow(() -> new OrderException(ErrorCode.ORDER_NOT_FOUND));
 
+    cancelOrderAndRestoreStock(order);
+    return order;
+  }
+
+  /**
+   * 주문 결제 완료 처리.
+   */
+  @Transactional
+  public Order payOrder(Order order) {
+    order.pay();
+    return order;
+  }
+
+  /**
+   * 주문 취소 후 재고 복원 이벤트를 발행한다.
+   */
+  @Transactional
+  public Order cancelOrderAndRestoreStock(Order order) {
     order.cancel();
     restoreDropStock(order);
     return order;
@@ -108,7 +136,7 @@ public class OrderService {
     int restoreQuantity = order.getOrderItems().stream()
         .mapToInt(OrderItem::getQuantity)
         .sum();
-    dropsFacadeService.restoreStockForOrder(order.getDropId(), restoreQuantity);
+    eventPublisher.publishEvent(new StockRestoreEvent(order.getDropId(), restoreQuantity));
   }
 
 }

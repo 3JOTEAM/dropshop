@@ -3,6 +3,7 @@ package com.example.dropshop.domain.payment.controller;
 import com.example.dropshop.common.dto.ApiResponse;
 import com.example.dropshop.domain.payment.dto.request.PaymentConfirmRequest;
 import com.example.dropshop.domain.payment.dto.request.PaymentPrepareRequest;
+import com.example.dropshop.domain.payment.dto.request.PaymentWebhookRequest;
 import com.example.dropshop.domain.payment.dto.response.PaymentConfirmResponse;
 import com.example.dropshop.domain.payment.dto.response.PaymentPortOneRequestResponse;
 import com.example.dropshop.domain.payment.dto.response.PaymentPrepareResponse;
@@ -70,6 +71,20 @@ public class PaymentController {
     return ResponseEntity.ok(ApiResponse.ok(
         paymentFacadeService.confirmPayment(paymentId, getAuthenticatedEmail(), request)
     ));
+  }
+
+  /**
+   * PortOne 웹훅을 수신해 결제 상태를 동기화한다.
+     *
+   * @param request 웹훅 요청 본문
+   * @return 처리 성공 응답
+   */
+  @PostMapping("/webhook")
+  public ResponseEntity<ApiResponse<Void>> handleWebhook(
+      @RequestBody PaymentWebhookRequest request
+  ) {
+    paymentFacadeService.handleWebhook(request);
+    return ResponseEntity.ok(ApiResponse.ok());
   }
 
   private String getAuthenticatedEmail() {

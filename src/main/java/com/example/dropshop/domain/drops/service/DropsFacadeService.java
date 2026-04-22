@@ -6,7 +6,7 @@ import com.example.dropshop.domain.drops.dto.request.DropUpdateRequest;
 import com.example.dropshop.domain.drops.dto.response.DropResponse;
 import com.example.dropshop.domain.drops.entity.Drops;
 import com.example.dropshop.domain.drops.exception.DropsException;
-import com.example.dropshop.domain.order.facade.OrderFacadeService;
+import com.example.dropshop.domain.order.service.OrderHistoryQueryService;
 import com.example.dropshop.domain.product.entity.Product;
 import com.example.dropshop.domain.product.enums.ProductStatus;
 import com.example.dropshop.domain.product.service.ProductDomainFacadeService;
@@ -32,6 +32,7 @@ public class DropsFacadeService {
   private final ProductDomainFacadeService productDomainFacadeService;
   private final OrderFacadeService orderFacadeService;
   private final DropsRepository dropsRepository;
+  private final OrderHistoryQueryService orderHistoryQueryService;
 
   /**
    * 판매자 드랍을 생성한다.
@@ -90,7 +91,7 @@ public class DropsFacadeService {
     Product product = drops.getProduct();
     productDomainFacadeService.validateOwnership(product, sellerId);
 
-    if (!drops.isScheduled() || orderFacadeService.existsOrderHistoryForDrop(dropId)) {
+    if (!drops.isScheduled() || orderHistoryQueryService.existsOrderHistoryForDrop(dropId)) {
       throw new DropsException(ErrorCode.DROP_DELETE_NOT_ALLOWED);
     }
 

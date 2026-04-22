@@ -23,5 +23,13 @@ public class UserFacadeService {
   public Optional<User> findById(Long userId) {
     return userRepository.findById(userId);
   }
+
+  /**
+   * 이메일로 사용자 정보를 조회한다.
+   */
+  @Transactional(readOnly = true)
+  public Optional<User> findByEmail(String email) {
+    return userRepository.findByEmail(email);
+  }
 }
 
