@@ -31,6 +31,7 @@ public class DropsFacadeService {
   private final DropsService dropsService;
   private final ProductDomainFacadeService productDomainFacadeService;
   private final OrderFacadeService orderFacadeService;
+  private final DropsRepository dropsRepository;
 
   /**
    * 판매자 드랍을 생성한다.

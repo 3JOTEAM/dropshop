@@ -66,4 +66,26 @@ public class Queue {
     this.dropId = dropId;
     this.status = QueueStatus.WAITING;
   }
+
+  /**
+   * 대기열 ready 변경.
+   */
+  public void ready() {
+    this.status = QueueStatus.READY;
+  }
+
+  /**
+   * 대기열 entered 변경.
+   */
+  public void enter() {
+    this.status = QueueStatus.ENTERED;
+  }
+
+  /**
+   * 대기열 expired 변경.
+   */
+  public void expire() {
+    this.status = QueueStatus.EXPIRED;
+    this.expiredAt = LocalDateTime.now();
+  }
 }

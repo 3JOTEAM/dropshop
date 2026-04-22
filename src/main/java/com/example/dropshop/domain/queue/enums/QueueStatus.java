@@ -8,8 +8,10 @@ import lombok.Getter;
 @Getter
 public enum QueueStatus {
   WAITING("대기 중"),
-  ALLOWED("허가 된"),
-  EXPIRED("만료 된");
+  READY("입장 가능"),
+  ENTERED("상세 진입 완료"),
+  EXPIRED("시간 초과"),
+  BLOCKED("진입 불가");
 
   private final String description;
 
@@ -17,3 +19,4 @@ public enum QueueStatus {
     this.description = description;
   }
 }
+
