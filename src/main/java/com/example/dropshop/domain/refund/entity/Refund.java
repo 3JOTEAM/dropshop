@@ -1,6 +1,8 @@
 package com.example.dropshop.domain.refund.entity;
 
 import com.example.dropshop.common.entity.BaseEntity;
+import com.example.dropshop.common.exception.ErrorCode;
+import com.example.dropshop.domain.refund.exception.RefundException;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -80,9 +82,32 @@ public class Refund extends BaseEntity {
   }
 
   /**
+   * 외부 PG 환불 처리 시작.
+   */
+  public void startProcessing() {
+    if (this.status != RefundStatus.APPROVED) {
+      throw new RefundException(ErrorCode.REFUND_INVALID_STATUS);
+    }
+    this.status = RefundStatus.PROCESSING;
+  }
+
+  /**
+   * 외부 PG 환불 실패로 승인 상태로 복구.
+   */
+  public void revertToApproved() {
+    if (this.status != RefundStatus.PROCESSING) {
+      throw new RefundException(ErrorCode.REFUND_INVALID_STATUS);
+    }
+    this.status = RefundStatus.APPROVED;
+  }
+
+  /**
    * 환불 완료.
    */
   public void complete() {
+    if (this.status != RefundStatus.PROCESSING) {
+      throw new RefundException(ErrorCode.REFUND_INVALID_STATUS);
+    }
     this.completedAt = LocalDateTime.now();
     this.status = RefundStatus.COMPLETED;
   }

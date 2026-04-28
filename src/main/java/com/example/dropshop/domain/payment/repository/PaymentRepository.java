@@ -11,12 +11,12 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
 
   boolean existsByOrderId(Long orderId);
 
-  boolean existsByIdempotencyKey(String idempotencyKey);
+  boolean existsByMerchantPaymentId(String merchantPaymentId);
 
   /**
    * 결제 요청 키로 결제 조회.
    */
-  Optional<Payment> findByIdempotencyKey(String idempotencyKey);
+  Optional<Payment> findByMerchantPaymentId(String merchantPaymentId);
 
   Optional<Payment> findByOrderId(Long orderId);
 

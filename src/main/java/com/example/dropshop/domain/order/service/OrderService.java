@@ -1,23 +1,24 @@
 package com.example.dropshop.domain.order.service;
 
+import com.example.dropshop.common.lock.LockKeys;
+import com.example.dropshop.common.lock.RedisLockService;
 import com.example.dropshop.common.exception.ErrorCode;
 import com.example.dropshop.domain.order.entity.Order;
 import com.example.dropshop.domain.order.entity.OrderItem;
-import com.example.dropshop.domain.order.exception.OrderException;
 import com.example.dropshop.domain.order.enums.OrderStatus;
 import com.example.dropshop.domain.order.event.StockRestoreEvent;
 import com.example.dropshop.domain.order.exception.OrderException;
 import com.example.dropshop.domain.order.repository.OrderRepository;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.util.List;
+import org.springframework.transaction.support.TransactionTemplate;
 
 /**
  * 주문 서비스.
@@ -28,6 +29,8 @@ public class OrderService {
 
   private final OrderRepository orderRepository;
   private final ApplicationEventPublisher eventPublisher;
+  private final RedisLockService redisLockService;
+  private final TransactionTemplate transactionTemplate;
 
   /**
    * 주문 생성.
@@ -89,13 +92,11 @@ public class OrderService {
   /**
    * 수동 주문 취소.
    */
-  @Transactional
   public Order cancelOrder(Long orderId, Long userId) {
-    Order order = orderRepository.findByIdAndUserId(orderId, userId)
-        .orElseThrow(() -> new OrderException(ErrorCode.ORDER_NOT_FOUND));
-
-    cancelOrderAndRestoreStock(order);
-    return order;
+    return redisLockService.executeWithLock(
+        LockKeys.order(orderId),
+        () -> transactionTemplate.execute(status -> cancelOrderInternal(orderId, userId))
+    );
   }
 
   /**
@@ -134,15 +135,12 @@ public class OrderService {
    * 만료 주문 취소 처리.
    * 스케줄러가 30초마다 호출
    */
-  @Transactional
   public void cancelExpiredOrders() {
     List<Order> expiredOrders = orderRepository
         .findAllByStatusAndHoldExpiredAtBefore(OrderStatus.PENDING, LocalDateTime.now());
-
-    expiredOrders.forEach(order -> {
-      order.cancel();
-      restoreDropStock(order);
-    });
+    expiredOrders.stream()
+        .map(Order::getId)
+        .forEach(this::cancelExpiredOrderSafely);
   }
 
   private void restoreDropStock(Order order) {
@@ -150,6 +148,33 @@ public class OrderService {
         .mapToInt(OrderItem::getQuantity)
         .sum();
     eventPublisher.publishEvent(new StockRestoreEvent(order.getDropId(), restoreQuantity));
+  }
+
+  private Order cancelOrderInternal(Long orderId, Long userId) {
+    Order order = orderRepository.findByIdAndUserId(orderId, userId)
+        .orElseThrow(() -> new OrderException(ErrorCode.ORDER_NOT_FOUND));
+    return cancelOrderAndRestoreStock(order);
+  }
+
+  private void cancelExpiredOrderSafely(Long orderId) {
+    redisLockService.tryExecuteWithLock(
+        LockKeys.order(orderId),
+        () -> transactionTemplate.execute(status -> {
+          cancelExpiredOrderIfNeeded(orderId);
+          return null;
+        })
+    );
+  }
+
+  private void cancelExpiredOrderIfNeeded(Long orderId) {
+    Order order = orderRepository.findById(orderId)
+        .orElseThrow(() -> new OrderException(ErrorCode.ORDER_NOT_FOUND));
+
+    if (order.getStatus() != OrderStatus.PENDING || !order.isHoldExpired()) {
+      return;
+    }
+
+    cancelOrderAndRestoreStock(order);
   }
 
 }

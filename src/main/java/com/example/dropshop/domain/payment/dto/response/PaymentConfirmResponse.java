@@ -14,8 +14,8 @@ public class PaymentConfirmResponse {
 
   private final Long paymentId;
   private final Long orderId;
-  private final String idempotencyKey;
-  private final String transactionId;
+  private final String merchantPaymentId;
+  private final String portOneTransactionId;
   private final PaymentStatus paymentStatus;
   private final OrderStatus orderStatus;
   private final LocalDateTime paidAt;
@@ -23,8 +23,8 @@ public class PaymentConfirmResponse {
   private PaymentConfirmResponse(Payment payment, OrderStatus orderStatus) {
     this.paymentId = payment.getId();
     this.orderId = payment.getOrderId();
-    this.idempotencyKey = payment.getIdempotencyKey();
-    this.transactionId = payment.getTransactionId();
+    this.merchantPaymentId = payment.getMerchantPaymentId();
+    this.portOneTransactionId = payment.getPortOneTransactionId();
     this.paymentStatus = payment.getStatus();
     this.orderStatus = orderStatus;
     this.paidAt = payment.getPaidAt();

@@ -1,13 +1,13 @@
 package com.example.dropshop.domain.payment.service;
 
-import com.example.dropshop.common.config.PortOneProperties;
+import com.example.dropshop.common.lock.LockKeys;
+import com.example.dropshop.common.lock.RedisLockService;
 import com.example.dropshop.common.exception.ErrorCode;
 import com.example.dropshop.domain.order.entity.Order;
 import com.example.dropshop.domain.order.enums.OrderStatus;
 import com.example.dropshop.domain.order.exception.OrderException;
 import com.example.dropshop.domain.order.facade.OrderFacadeService;
 import com.example.dropshop.domain.payment.client.PortOneClient;
-import com.example.dropshop.domain.payment.dto.request.PaymentWebhookRequest;
 import com.example.dropshop.domain.payment.dto.response.PortOnePaymentResponse;
 import com.example.dropshop.domain.payment.entity.Payment;
 import com.example.dropshop.domain.payment.enums.PaymentMethod;
@@ -15,9 +15,10 @@ import com.example.dropshop.domain.payment.enums.PaymentStatus;
 import com.example.dropshop.domain.payment.exception.PaymentException;
 import com.example.dropshop.domain.payment.repository.PaymentRepository;
 import java.math.BigDecimal;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 /**
  * 결제 생성, 조회, 검증, 확정 로직을 처리하는 도메인 서비스다.
@@ -29,7 +30,8 @@ public class PaymentService {
   private final PaymentRepository paymentRepository;
   private final OrderFacadeService orderFacadeService;
   private final PortOneClient portOneClient;
-  private final PortOneProperties portOneProperties;
+  private final RedisLockService redisLockService;
+  private final TransactionTemplate transactionTemplate;
 
   public record PaymentConfirmResult(Payment payment, OrderStatus orderStatus) {
   }
@@ -39,57 +41,29 @@ public class PaymentService {
    *
    * @param orderId 주문 ID
    * @param amount 결제 금액
-   * @param idempotencyKey 중복 요청 방지 키
+   * @param merchantPaymentId 중복 요청 방지 키이자 가맹점 결제 식별자
    * @param paymentMethod 결제 수단
    * @return 저장된 결제 엔티티
    * @throws OrderException 주문 상태가 결제 가능하지 않은 경우
    * @throws PaymentException 결제 금액 또는 중복 요청 정보가 유효하지 않은 경우
    */
-  @Transactional
   public Payment preparePayment(
       String email,
       Long orderId,
       BigDecimal amount,
-      String idempotencyKey,
+      String merchantPaymentId,
       PaymentMethod paymentMethod
   ) {
-    Order order = getOrder(orderId, email);
-
-    validateOrderPending(order);
-    validateOrderNotExpired(order);
-    validatePaymentAmount(order, amount);
-    validatePaymentNotExists(orderId);
-    validateIdempotencyKeyNotExists(idempotencyKey);
-
-    Payment payment = Payment.prepare(orderId, idempotencyKey, paymentMethod, amount);
-    return paymentRepository.save(payment);
-  }
-
-  /**
-   * 결제를 단건 조회한다.
-   *
-   * @param paymentId 결제 ID
-   * @return 조회된 결제 엔티티
-   * @throws PaymentException 결제를 찾을 수 없는 경우
-   */
-  @Transactional(readOnly = true)
-  public Payment getPayment(Long paymentId, String email) {
-    Payment payment = paymentRepository.findById(paymentId)
-        .orElseThrow(() -> new PaymentException(ErrorCode.PAYMENT_NOT_FOUND));
-    validateOrderOwnership(payment.getOrderId(), email);
-    return payment;
-  }
-
-  /**
-   * 주문을 단건 조회한다.
-   *
-   * @param orderId 주문 ID
-   * @return 조회된 주문 엔티티
-   * @throws OrderException 주문을 찾을 수 없는 경우
-   */
-  @Transactional(readOnly = true)
-  public Order getOrder(Long orderId, String email) {
-    return orderFacadeService.findOrderForPayment(orderId, email);
+    return redisLockService.executeWithLock(
+        LockKeys.order(orderId),
+        () -> transactionTemplate.execute(status -> preparePaymentInternal(
+            email,
+            orderId,
+            amount,
+            merchantPaymentId,
+            paymentMethod
+        ))
+    );
   }
 
   /**
@@ -101,7 +75,6 @@ public class PaymentService {
    * @throws PaymentException PortOne 응답 검증 또는 결제 확정에 실패한 경우
    * @throws OrderException 주문 상태가 결제 가능하지 않은 경우
    */
-  @Transactional
   public Payment confirmPayment(Long paymentId, String email, String portOnePaymentId) {
     return confirmPaymentWithOrderStatus(paymentId, email, portOnePaymentId).payment();
   }
@@ -109,108 +82,112 @@ public class PaymentService {
   /**
    * PortOne 결제 결과를 검증하고 주문 상태까지 함께 반환한다.
    */
-  @Transactional
   public PaymentConfirmResult confirmPaymentWithOrderStatus(
       Long paymentId,
       String email,
       String portOnePaymentId
   ) {
-    Payment payment = getPayment(paymentId, email);
-    Order order = getOrder(payment.getOrderId(), email);
+    Long orderId = findAccessiblePayment(paymentId, email).getOrderId();
 
-    validatePaymentPending(payment);
+    return redisLockService.executeWithLock(
+        LockKeys.order(orderId),
+        () -> transactionTemplate.execute(status -> confirmPaymentInternal(
+            paymentId,
+            email,
+            portOnePaymentId
+        ))
+    );
+  }
+
+  private Payment preparePaymentInternal(
+      String email,
+      Long orderId,
+      BigDecimal amount,
+      String merchantPaymentId,
+      PaymentMethod paymentMethod
+  ) {
+    Order order = orderFacadeService.findOrderForPayment(orderId, email);
+
     validateOrderPending(order);
     validateOrderNotExpired(order);
+    validatePaymentAmount(order, amount);
+
+    Optional<Payment> existingPayment = paymentRepository.findByMerchantPaymentId(merchantPaymentId);
+    if (existingPayment.isPresent()) {
+      return validateIdempotentPreparedPayment(existingPayment.get(), orderId, amount, paymentMethod);
+    }
+
+    validatePaymentNotExists(orderId);
+
+    Payment payment = Payment.prepare(orderId, merchantPaymentId, paymentMethod, amount);
+    return paymentRepository.save(payment);
+  }
+
+  private PaymentConfirmResult confirmPaymentInternal(
+      Long paymentId,
+      String email,
+      String portOnePaymentId
+  ) {
+    Payment payment = findAccessiblePayment(paymentId, email);
+    Order order = orderFacadeService.findOrderForPayment(payment.getOrderId(), email);
+
     validatePortOnePaymentId(payment, portOnePaymentId);
 
-    PortOnePaymentResponse portOnePayment = portOneClient.getPayment(portOnePaymentId);
-    Payment confirmedPayment = applyPortOnePaymentResult(payment, order, portOnePayment, true);
-    return new PaymentConfirmResult(confirmedPayment, order.getStatus());
-  }
-
-  /**
-   * PortOne 웹훅을 수신해 내부 결제 상태를 동기화한다.
-   */
-  @Transactional
-  public Payment handleWebhook(String portOnePaymentId) {
-    if (portOnePaymentId == null || portOnePaymentId.isBlank()) {
-      throw new PaymentException(ErrorCode.PAYMENT_WEBHOOK_PAYMENT_ID_REQUIRED);
+    if (payment.getStatus() != PaymentStatus.PENDING) {
+      return new PaymentConfirmResult(payment, order.getStatus());
     }
 
-    Payment payment = paymentRepository.findByIdempotencyKey(portOnePaymentId)
-        .orElseThrow(() -> new PaymentException(ErrorCode.PAYMENT_WEBHOOK_PAYMENT_NOT_FOUND));
-    Order order = orderFacadeService.findOrderForPaymentWebhook(payment.getOrderId());
+    validateOrderPending(order);
+    validateOrderNotExpired(order);
 
     PortOnePaymentResponse portOnePayment = portOneClient.getPayment(portOnePaymentId);
-    return applyPortOnePaymentResult(payment, order, portOnePayment, false);
+    applyConfirmationResult(payment, order, portOnePayment);
+    return new PaymentConfirmResult(payment, order.getStatus());
   }
 
-  /**
-   * PortOne 웹훅 서명을 검증한 뒤 내부 결제 상태를 동기화한다.
-   */
-  @Transactional
-  public Payment handleWebhook(PaymentWebhookRequest request) {
-    if (!request.verifySignature(portOneProperties.resolvedWebhookSecret())) {
-      throw new PaymentException(ErrorCode.PAYMENT_WEBHOOK_INVALID_SIGNATURE);
+  private Payment findAccessiblePayment(Long paymentId, String email) {
+    Payment payment = paymentRepository.findById(paymentId)
+        .orElseThrow(() -> new PaymentException(ErrorCode.PAYMENT_NOT_FOUND));
+    orderFacadeService.findOrderForPayment(payment.getOrderId(), email);
+    return payment;
+  }
+
+  private Payment validateIdempotentPreparedPayment(
+      Payment existingPayment,
+      Long orderId,
+      BigDecimal amount,
+      PaymentMethod paymentMethod
+  ) {
+    boolean matchesSameRequest = existingPayment.getOrderId().equals(orderId)
+        && existingPayment.getAmount().compareTo(amount) == 0
+        && existingPayment.getPaymentMethod() == paymentMethod;
+
+    if (!matchesSameRequest) {
+      throw new PaymentException(ErrorCode.PAYMENT_IDEMPOTENCY_KEY_CONFLICT);
     }
-    return handleWebhook(request.extractPortOnePaymentId());
+
+    return existingPayment;
   }
 
-  /**
-   * PortOne 상점 식별자를 반환한다.
-   *
-   * @return PortOne storeId
-   */
-  public String getStoreId() {
-    return portOneProperties.storeId();
-  }
-
-  /**
-   * PortOne 채널 키를 반환한다.
-   *
-   * @return PortOne channelKey
-   */
-  public String getChannelKey() {
-    return portOneProperties.channelKey();
-  }
-
-  /**
-   * PortOne 결제 후 리다이렉트 URL을 반환한다.
-   *
-   * @return PortOne redirectUrl
-   */
-  public String getRedirectUrl() {
-    return portOneProperties.redirectUrl();
-  }
-
-  private Payment applyPortOnePaymentResult(
+  private void applyConfirmationResult(
       Payment payment,
       Order order,
-      PortOnePaymentResponse portOnePayment,
-      boolean cancelOrderOnFailure
+      PortOnePaymentResponse portOnePayment
   ) {
     validatePortOneResponse(payment, portOnePayment);
 
-    if (payment.getStatus() != PaymentStatus.PENDING) {
-      return payment;
-    }
-
     if ("PAID".equals(portOnePayment.status())) {
-      validateOrderPending(order);
-      validateOrderNotExpired(order);
       payment.complete(portOnePayment.transactionId());
       orderFacadeService.payOrderByPayment(order);
-      return payment;
+      return;
     }
 
     if (isFailureStatus(portOnePayment.status())) {
       payment.fail();
-      if (cancelOrderOnFailure) {
-        if (order.getStatus() == OrderStatus.PENDING) {
-          orderFacadeService.cancelOrderByPaymentFailure(order);
-        }
+      if (order.getStatus() == OrderStatus.PENDING) {
+        orderFacadeService.cancelOrderByPaymentFailure(order);
       }
-      return payment;
+      return;
     }
 
     throw new PaymentException(ErrorCode.PAYMENT_PORTONE_NOT_PAID);
@@ -240,20 +217,8 @@ public class PaymentService {
     }
   }
 
-  private void validateIdempotencyKeyNotExists(String idempotencyKey) {
-    if (paymentRepository.existsByIdempotencyKey(idempotencyKey)) {
-      throw new PaymentException(ErrorCode.PAYMENT_IDEMPOTENCY_KEY_CONFLICT);
-    }
-  }
-
-  private void validatePaymentPending(Payment payment) {
-    if (payment.getStatus() != PaymentStatus.PENDING) {
-      throw new PaymentException(ErrorCode.PAYMENT_CONFIRM_FORBIDDEN);
-    }
-  }
-
   private void validatePortOnePaymentId(Payment payment, String portOnePaymentId) {
-    if (!payment.getIdempotencyKey().equals(portOnePaymentId)) {
+    if (!payment.getMerchantPaymentId().equals(portOnePaymentId)) {
       throw new PaymentException(ErrorCode.PAYMENT_PORTONE_MISMATCH);
     }
   }
@@ -262,7 +227,7 @@ public class PaymentService {
     if (portOnePayment == null) {
       throw new PaymentException(ErrorCode.PAYMENT_PORTONE_API_ERROR);
     }
-    if (!payment.getIdempotencyKey().equals(portOnePayment.id())) {
+    if (!payment.getMerchantPaymentId().equals(portOnePayment.id())) {
       throw new PaymentException(ErrorCode.PAYMENT_PORTONE_MISMATCH);
     }
     if (portOnePayment.amount() == null || portOnePayment.amount().total() == null) {
@@ -278,9 +243,5 @@ public class PaymentService {
 
   private boolean isFailureStatus(String status) {
     return "FAILED".equals(status) || "CANCELLED".equals(status);
-  }
-
-  private void validateOrderOwnership(Long orderId, String email) {
-    orderFacadeService.findOrderForPayment(orderId, email);
   }
 }

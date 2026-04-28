@@ -9,7 +9,9 @@ import com.example.dropshop.domain.order.entity.Order;
 import com.example.dropshop.domain.order.entity.OrderItem;
 import com.example.dropshop.domain.payment.entity.Payment;
 import com.example.dropshop.domain.payment.enums.PaymentMethod;
+import com.example.dropshop.domain.payment.service.PaymentQueryService;
 import com.example.dropshop.domain.payment.service.PaymentService;
+import com.example.dropshop.domain.payment.service.PaymentWebhookService;
 import com.example.dropshop.domain.product.entity.Product;
 import com.example.dropshop.domain.product.service.ProductDomainFacadeService;
 import java.math.BigDecimal;
@@ -28,6 +30,12 @@ class PaymentFacadeServiceTest {
   private PaymentService paymentService;
 
   @Mock
+  private PaymentQueryService paymentQueryService;
+
+  @Mock
+  private PaymentWebhookService paymentWebhookService;
+
+  @Mock
   private ProductDomainFacadeService productDomainFacadeService;
 
   @InjectMocks
@@ -40,11 +48,11 @@ class PaymentFacadeServiceTest {
     Payment payment = createPayment();
     Product product = createProduct(100L, "한정판 스니커즈");
 
-    given(paymentService.getPayment(1L, "test@test.com")).willReturn(payment);
-    given(paymentService.getOrder(1L, "test@test.com")).willReturn(order);
-    given(paymentService.getStoreId()).willReturn("store-test");
-    given(paymentService.getChannelKey()).willReturn("channel-test");
-    given(paymentService.getRedirectUrl()).willReturn("http://localhost:8080/payments/redirect");
+    given(paymentQueryService.getPayment(1L, "test@test.com")).willReturn(payment);
+    given(paymentQueryService.getOrder(1L, "test@test.com")).willReturn(order);
+    given(paymentQueryService.getStoreId()).willReturn("store-test");
+    given(paymentQueryService.getChannelKey()).willReturn("channel-test");
+    given(paymentQueryService.getRedirectUrl()).willReturn("http://localhost:8080/payments/redirect");
     given(productDomainFacadeService.findProduct(100L)).willReturn(product);
 
     var response = paymentFacadeService.getPortOneRequest(1L, "test@test.com");
@@ -60,11 +68,11 @@ class PaymentFacadeServiceTest {
     Payment payment = createPayment();
     Product firstProduct = createProduct(100L, "한정판 스니커즈");
 
-    given(paymentService.getPayment(1L, "test@test.com")).willReturn(payment);
-    given(paymentService.getOrder(1L, "test@test.com")).willReturn(order);
-    given(paymentService.getStoreId()).willReturn("store-test");
-    given(paymentService.getChannelKey()).willReturn("channel-test");
-    given(paymentService.getRedirectUrl()).willReturn("http://localhost:8080/payments/redirect");
+    given(paymentQueryService.getPayment(1L, "test@test.com")).willReturn(payment);
+    given(paymentQueryService.getOrder(1L, "test@test.com")).willReturn(order);
+    given(paymentQueryService.getStoreId()).willReturn("store-test");
+    given(paymentQueryService.getChannelKey()).willReturn("channel-test");
+    given(paymentQueryService.getRedirectUrl()).willReturn("http://localhost:8080/payments/redirect");
     given(productDomainFacadeService.findProduct(100L)).willReturn(firstProduct);
 
     var response = paymentFacadeService.getPortOneRequest(1L, "test@test.com");

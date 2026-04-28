@@ -56,7 +56,7 @@ class PaymentControllerTest {
     PaymentPrepareRequest request = new PaymentPrepareRequest();
     ReflectionTestUtils.setField(request, "orderId", 1L);
     ReflectionTestUtils.setField(request, "amount", java.math.BigDecimal.valueOf(79000));
-    ReflectionTestUtils.setField(request, "idempotencyKey", "payment-test-123");
+    ReflectionTestUtils.setField(request, "merchantPaymentId", "payment-test-123");
     ReflectionTestUtils.setField(request, "paymentMethod", PaymentMethod.CARD);
 
     Payment payment = createPayment();
@@ -73,7 +73,7 @@ class PaymentControllerTest {
         .andExpect(jsonPath("$.success").value(true))
         .andExpect(jsonPath("$.data.paymentId").value(1L))
         .andExpect(jsonPath("$.data.orderId").value(1L))
-        .andExpect(jsonPath("$.data.idempotencyKey").value("payment-test-123"))
+        .andExpect(jsonPath("$.data.merchantPaymentId").value("payment-test-123"))
         .andExpect(jsonPath("$.data.status").value("PENDING"));
   }
 
@@ -98,7 +98,7 @@ class PaymentControllerTest {
         .andExpect(jsonPath("$.data.paymentId").value(1L))
         .andExpect(jsonPath("$.data.storeId").value("store-test"))
         .andExpect(jsonPath("$.data.channelKey").value("channel-test"))
-        .andExpect(jsonPath("$.data.portOnePaymentId").value("payment-test-123"))
+        .andExpect(jsonPath("$.data.merchantPaymentId").value("payment-test-123"))
         .andExpect(jsonPath("$.data.payMethod").value("CARD"));
   }
 
@@ -122,7 +122,7 @@ class PaymentControllerTest {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.success").value(true))
         .andExpect(jsonPath("$.data.paymentId").value(1L))
-        .andExpect(jsonPath("$.data.transactionId").value("tx-123"))
+        .andExpect(jsonPath("$.data.portOneTransactionId").value("tx-123"))
         .andExpect(jsonPath("$.data.paymentStatus").value("COMPLETED"))
         .andExpect(jsonPath("$.data.orderStatus").value("PAID"));
   }

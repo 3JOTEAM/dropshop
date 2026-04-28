@@ -15,7 +15,7 @@ public class PaymentPortOneRequestResponse {
   private final Long orderId;
   private final String storeId;
   private final String channelKey;
-  private final String portOnePaymentId;
+  private final String merchantPaymentId;
   private final String orderName;
   private final String currency;
   private final String payMethod;
@@ -34,7 +34,7 @@ public class PaymentPortOneRequestResponse {
     this.orderId = payment.getOrderId();
     this.storeId = storeId;
     this.channelKey = channelKey;
-    this.portOnePaymentId = payment.getIdempotencyKey();
+    this.merchantPaymentId = payment.getMerchantPaymentId();
     this.orderName = orderName;
     this.currency = "CURRENCY_KRW";
     this.payMethod = payment.getPaymentMethod().name();

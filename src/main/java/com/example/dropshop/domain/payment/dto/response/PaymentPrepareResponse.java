@@ -15,7 +15,7 @@ public class PaymentPrepareResponse {
 
   private final Long paymentId;
   private final Long orderId;
-  private final String idempotencyKey;
+  private final String merchantPaymentId;
   private final PaymentMethod paymentMethod;
   private final BigDecimal amount;
   private final PaymentStatus status;
@@ -24,7 +24,7 @@ public class PaymentPrepareResponse {
   private PaymentPrepareResponse(Payment payment) {
     this.paymentId = payment.getId();
     this.orderId = payment.getOrderId();
-    this.idempotencyKey = payment.getIdempotencyKey();
+    this.merchantPaymentId = payment.getMerchantPaymentId();
     this.paymentMethod = payment.getPaymentMethod();
     this.amount = payment.getAmount();
     this.status = payment.getStatus();

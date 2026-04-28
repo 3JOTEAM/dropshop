@@ -23,8 +23,8 @@ public class PaymentPrepareRequest {
   private BigDecimal amount;
 
   @NotBlank
-  @Size(max = 40, message = "idempotencyKey는 40자 이하여야 합니다.")
-  private String idempotencyKey;
+  @Size(max = 40, message = "merchantPaymentId는 40자 이하여야 합니다.")
+  private String merchantPaymentId;
 
   @NotNull
   private PaymentMethod paymentMethod;

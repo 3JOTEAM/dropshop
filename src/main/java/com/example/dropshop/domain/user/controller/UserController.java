@@ -7,7 +7,6 @@ import com.example.dropshop.domain.user.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -25,16 +24,16 @@ public class UserController {
 
     @PatchMapping("/password")
     public ApiResponse<Void> updatePassword(
-            @AuthenticationPrincipal UserDetails userDetails,
+            @AuthenticationPrincipal String email,
             @RequestBody PasswordUpdateRequest request) {
-        userService.updatePassword(userDetails.getUsername(), request);
+        userService.updatePassword(email, request);
         return ApiResponse.ok();
     }
 
     @DeleteMapping("/withdraw")
     public ApiResponse<Void> withdraw(
-            @AuthenticationPrincipal UserDetails userDetails) {
-        userService.withdraw(userDetails.getUsername());
+            @AuthenticationPrincipal String email) {
+        userService.withdraw(email);
         return ApiResponse.ok();
     }
 }

@@ -1,6 +1,8 @@
 package com.example.dropshop.domain.refund.service;
 
 import com.example.dropshop.common.exception.ErrorCode;
+import com.example.dropshop.common.lock.LockKeys;
+import com.example.dropshop.common.lock.RedisLockService;
 import com.example.dropshop.domain.order.entity.Order;
 import com.example.dropshop.domain.order.enums.OrderStatus;
 import com.example.dropshop.domain.order.facade.OrderFacadeService;
@@ -18,6 +20,7 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 /**
  * 환불 생성, 조회, 상태 변경을 처리하는 서비스.
@@ -27,12 +30,15 @@ import org.springframework.transaction.annotation.Transactional;
 public class RefundService {
 
   private static final List<RefundStatus> ACTIVE_REFUND_STATUSES =
-      List.of(RefundStatus.PENDING, RefundStatus.APPROVED);
+      List.of(RefundStatus.PENDING, RefundStatus.APPROVED, RefundStatus.PROCESSING);
 
   private final RefundRepository refundRepository;
   private final PaymentRepository paymentRepository;
   private final PortOneClient portOneClient;
   private final OrderFacadeService orderFacadeService;
+  private final RefundCompletionWorker refundCompletionWorker;
+  private final RedisLockService redisLockService;
+  private final TransactionTemplate transactionTemplate;
 
   /**
    * 결제 완료 건에 대한 환불 요청을 생성한다.
@@ -43,22 +49,21 @@ public class RefundService {
    * @param refundReason 환불 사유
    * @return 생성된 환불 엔티티
    */
-  @Transactional
   public Refund createRefund(
       String email,
       Long paymentId,
       BigDecimal refundAmount,
       String refundReason
   ) {
-    Payment payment = getPayment(paymentId);
-    Order order = orderFacadeService.findOrderForPayment(payment.getOrderId(), email);
-
-    validateRefundablePayment(payment);
-    validateRefundableOrder(order);
-    validateFullRefundAmount(payment, refundAmount);
-    validateActiveRefundNotExists(paymentId);
-
-    return refundRepository.save(Refund.create(paymentId, refundAmount, refundReason));
+    return redisLockService.executeWithLock(
+        LockKeys.payment(paymentId),
+        () -> transactionTemplate.execute(status -> createRefundInternal(
+            email,
+            paymentId,
+            refundAmount,
+            refundReason
+        ))
+    );
   }
 
   /**
@@ -112,29 +117,11 @@ public class RefundService {
    * @param email 인증된 사용자 이메일
    * @return 완료된 환불 엔티티
    */
-  @Transactional
   public Refund completeRefund(Long refundId, String email) {
-    Refund refund = findRefund(refundId);
-    validateRefundOwnership(refund, email);
-    validateRefundStatus(refund, RefundStatus.APPROVED);
-
-    Payment payment = getPayment(refund.getPaymentId());
-    Order order = orderFacadeService.findOrderForPayment(payment.getOrderId(), email);
-    validateRefundableOrder(order);
-
-    try {
-      portOneClient.cancelPayment(
-          payment.getIdempotencyKey(),
-          refund.getRefundAmount(),
-          refund.getRefundReason() == null ? "환불 요청" : refund.getRefundReason()
-      );
-    } catch (PaymentException e) {
-      throw new RefundException(ErrorCode.REFUND_PORTONE_API_ERROR, e.getMessage());
-    }
-
-    refund.complete();
-    orderFacadeService.refundOrderByRefund(order);
-    return refund;
+    return redisLockService.executeWithLock(
+        LockKeys.refund(refundId),
+        () -> completeRefundInternal(refundId, email)
+    );
   }
 
   /**
@@ -196,5 +183,50 @@ public class RefundService {
     if (refund.getStatus() != expectedStatus) {
       throw new RefundException(ErrorCode.REFUND_INVALID_STATUS);
     }
+  }
+
+  private Refund createRefundInternal(
+      String email,
+      Long paymentId,
+      BigDecimal refundAmount,
+      String refundReason
+  ) {
+    Payment payment = getPayment(paymentId);
+    Order order = orderFacadeService.findOrderForPayment(payment.getOrderId(), email);
+
+    validateRefundablePayment(payment);
+    validateRefundableOrder(order);
+    validateFullRefundAmount(payment, refundAmount);
+    validateActiveRefundNotExists(paymentId);
+
+    return refundRepository.save(Refund.create(paymentId, refundAmount, refundReason));
+  }
+
+  private Refund completeRefundInternal(Long refundId, String email) {
+    Refund refund = transactionTemplate.execute(status -> {
+      Refund targetRefund = findRefund(refundId);
+      validateRefundOwnership(targetRefund, email);
+      return targetRefund;
+    });
+
+    if (refund.getStatus() == RefundStatus.COMPLETED) {
+      return refund;
+    }
+
+    RefundCompletionWorker.RefundCompletionCommand command =
+        refundCompletionWorker.prepareRefundCompletion(refundId, email);
+
+    try {
+      portOneClient.cancelPayment(
+          command.portOneTransactionId(),
+          command.refundAmount(),
+          command.refundReason()
+      );
+    } catch (PaymentException e) {
+      refundCompletionWorker.revertRefundCompletion(command.refundId());
+      throw new RefundException(ErrorCode.REFUND_PORTONE_API_ERROR, e.getMessage());
+    }
+
+    return refundCompletionWorker.finalizeRefundCompletion(command.refundId(), command.orderId());
   }
 }

@@ -66,6 +66,10 @@ public class User extends BaseEntity {
         this.password = encodedPassword;
     }
 
+    public void promoteToSeller() {
+        this.role = UserRole.SELLER;
+    }
+
     public void withdraw() {
         if (this.status == UserStatus.DELETED) {
             throw new IllegalStateException("이미 탈퇴된 사용자입니다.");

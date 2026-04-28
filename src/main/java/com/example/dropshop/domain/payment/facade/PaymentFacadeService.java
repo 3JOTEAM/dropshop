@@ -11,6 +11,8 @@ import com.example.dropshop.domain.payment.dto.response.PaymentPrepareResponse;
 import com.example.dropshop.domain.payment.entity.Payment;
 import com.example.dropshop.domain.payment.service.PaymentService.PaymentConfirmResult;
 import com.example.dropshop.domain.payment.service.PaymentService;
+import com.example.dropshop.domain.payment.service.PaymentQueryService;
+import com.example.dropshop.domain.payment.service.PaymentWebhookService;
 import com.example.dropshop.domain.product.entity.Product;
 import com.example.dropshop.domain.product.service.ProductDomainFacadeService;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +26,8 @@ import org.springframework.stereotype.Service;
 public class PaymentFacadeService {
 
   private final PaymentService paymentService;
+  private final PaymentQueryService paymentQueryService;
+  private final PaymentWebhookService paymentWebhookService;
   private final ProductDomainFacadeService productDomainFacadeService;
 
   /**
@@ -37,7 +41,7 @@ public class PaymentFacadeService {
         email,
         request.getOrderId(),
         request.getAmount(),
-        request.getIdempotencyKey(),
+        request.getMerchantPaymentId(),
         request.getPaymentMethod()
     );
     return PaymentPrepareResponse.from(payment);
@@ -50,15 +54,15 @@ public class PaymentFacadeService {
    * @return PortOne 요청 정보 응답
    */
   public PaymentPortOneRequestResponse getPortOneRequest(Long paymentId, String email) {
-    Payment payment = paymentService.getPayment(paymentId, email);
-    Order order = paymentService.getOrder(payment.getOrderId(), email);
+    Payment payment = paymentQueryService.getPayment(paymentId, email);
+    Order order = paymentQueryService.getOrder(payment.getOrderId(), email);
 
     return PaymentPortOneRequestResponse.of(
         payment,
-        paymentService.getStoreId(),
-        paymentService.getChannelKey(),
+        paymentQueryService.getStoreId(),
+        paymentQueryService.getChannelKey(),
         buildOrderName(order),
-        paymentService.getRedirectUrl()
+        paymentQueryService.getRedirectUrl()
     );
   }
 
@@ -83,7 +87,7 @@ public class PaymentFacadeService {
    * PortOne 웹훅을 처리한다.
    */
   public void handleWebhook(PaymentWebhookRequest request) {
-    paymentService.handleWebhook(request);
+    paymentWebhookService.handleWebhook(request);
   }
 
   private String buildOrderName(Order order) {

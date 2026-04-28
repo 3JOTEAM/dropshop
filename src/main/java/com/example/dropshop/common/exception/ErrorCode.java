@@ -89,6 +89,7 @@ public enum ErrorCode {
   ORDER_DUPLICATE(HttpStatus.CONFLICT, "이미 존재하는 주문입니다."),
   ORDER_INVALID_STATUS(HttpStatus.BAD_REQUEST, "유효하지 않은 주문 상태 전이입니다."),
   ORDER_HOLD_EXPIRED(HttpStatus.BAD_REQUEST, "주문 홀드 시간이 만료되었습니다."),
+  CONCURRENT_REQUEST_LOCKED(HttpStatus.CONFLICT, "동일 리소스를 처리 중입니다. 잠시 후 다시 시도해 주세요."),
 
   /**
    * Payment.

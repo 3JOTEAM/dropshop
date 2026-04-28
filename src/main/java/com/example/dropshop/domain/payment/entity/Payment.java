@@ -36,10 +36,10 @@ public class Payment extends BaseEntity {
   private Long orderId;
 
   @Column(nullable = false, unique = true, length = 100)
-  private String idempotencyKey;
+  private String merchantPaymentId;
 
-  @Column
-  private String transactionId;
+  @Column(name = "transaction_id")
+  private String portOneTransactionId;
 
   @Enumerated(EnumType.STRING)
   @Column(nullable = false, length = 50)
@@ -60,13 +60,13 @@ public class Payment extends BaseEntity {
    */
   public static Payment prepare(
       Long orderId,
-      String idempotencyKey,
+      String merchantPaymentId,
       PaymentMethod paymentMethod,
       BigDecimal amount
   ) {
     Payment payment = new Payment();
     payment.orderId = orderId;
-    payment.idempotencyKey = idempotencyKey;
+    payment.merchantPaymentId = merchantPaymentId;
     payment.paymentMethod = paymentMethod;
     payment.amount = amount;
     payment.status = PaymentStatus.PENDING;
@@ -86,14 +86,14 @@ public class Payment extends BaseEntity {
   /**
    * 결제 완료.
    */
-  public void complete(String transactionId) {
+  public void complete(String portOneTransactionId) {
     if (this.status != PaymentStatus.PENDING) {
       throw new PaymentException(ErrorCode.PAYMENT_COMPLETE_NOT_ALLOWED);
     }
-    if (transactionId == null || transactionId.isBlank()) {
+    if (portOneTransactionId == null || portOneTransactionId.isBlank()) {
       throw new PaymentException(ErrorCode.PAYMENT_TRANSACTION_ID_REQUIRED);
     }
-    this.transactionId = transactionId;
+    this.portOneTransactionId = portOneTransactionId;
     this.paidAt = LocalDateTime.now();
     this.status = PaymentStatus.COMPLETED;
   }
