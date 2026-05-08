@@ -40,7 +40,7 @@ public class QueueService {
   /**
    * 대기열 direct, queue 결정 메소드.
    *
-   * @param dropId 드랍 아이디.
+   * @param dropId    드랍 아이디.
    * @param userEmail 유저 이메일.
    */
   @Transactional
@@ -85,8 +85,8 @@ public class QueueService {
 
         int waitingTime = (int) ((waitingCount / THRESHOLD) * PROCESS_TIME);
 
-        int elapsedTime =
-            (int) Duration.between(queue.getEnteredAt(), LocalDateTime.now()).getSeconds();
+        int elapsedTime = (int) Duration.between(queue.getEnteredAt(), LocalDateTime.now())
+            .getSeconds();
 
         if (elapsedTime >= waitingTime) {
           String token = UUID.randomUUID().toString().replace("-", "");
@@ -95,22 +95,20 @@ public class QueueService {
 
           QueueToken queueToken = queueTokenRepository.save(new QueueToken(token, queue));
 
-          return ThreadHoldResponse.direct(
-              dropId, token, queueToken.getCreatedAt().plusMinutes(5), queue.getId());
+          return ThreadHoldResponse.direct(dropId, token, queueToken.getCreatedAt().plusMinutes(5),
+              queue.getId());
         }
 
-        return ThreadHoldResponse.queue(
-            dropId, queue.getId(), waitingCount, waitingTime - elapsedTime);
+        return ThreadHoldResponse.queue(dropId, queue.getId(), waitingCount,
+            waitingTime - elapsedTime);
       }
 
       // 3-2. 기존 큐의 상태가 READY/ENTERED라면 구매 상태 반환
 
       QueueToken queueToken = queueTokenRepository.findByQueueId(queue.getId()).get();
 
-      int expiresInSeconds =
-          (int)
-              Duration.between(LocalDateTime.now(), queueToken.getCreatedAt().plusMinutes(FIVE))
-                  .getSeconds();
+      int expiresInSeconds = (int) Duration.between(LocalDateTime.now(),
+          queueToken.getCreatedAt().plusMinutes(FIVE)).getSeconds();
 
       if (expiresInSeconds <= 0) {
         //        queue.expire();
@@ -118,19 +116,15 @@ public class QueueService {
         return ThreadHoldResponse.expire(dropId, queue.getId());
       }
 
-      return ThreadHoldResponse.direct(
-          dropId,
-          queueToken.getQueueToken(),
-          queueToken.getCreatedAt().plusMinutes(FIVE),
-          queue.getId());
+      return ThreadHoldResponse.direct(dropId, queueToken.getQueueToken(),
+          queueToken.getCreatedAt().plusMinutes(FIVE), queue.getId());
     } else {
       // 3-3. 기존 큐의 상태가 없다면 해당 Drops의 전체 Queue의 수 Check
 
       Queue queue = new Queue(user.getId(), dropId);
 
-      cnt =
-          queueRepository.countByDropIdAndStatusIn(
-              dropId, List.of(QueueStatus.WAITING, QueueStatus.READY));
+      cnt = queueRepository.countByDropIdAndStatusIn(dropId,
+          List.of(QueueStatus.WAITING, QueueStatus.READY));
 
       queue = queueRepository.save(queue);
 
@@ -143,12 +137,8 @@ public class QueueService {
 
         QueueToken queueToken = queueTokenRepository.save(new QueueToken(token, queue));
 
-        ThreadHoldResponse direct =
-            ThreadHoldResponse.newDirect(
-                dropId,
-                queueToken.getQueueToken(),
-                queueToken.getCreatedAt().plusMinutes(5),
-                queue.getId());
+        ThreadHoldResponse direct = ThreadHoldResponse.newDirect(dropId, queueToken.getQueueToken(),
+            queueToken.getCreatedAt().plusMinutes(5), queue.getId());
 
         queueTokenProducer.send(direct);
 

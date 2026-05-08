@@ -23,6 +23,9 @@ public class WishlistResponse {
    * @return 리턴.
    */
   public static WishlistResponse build(Long dropId, LocalDateTime time) {
-    return WishlistResponse.builder().dropId(dropId).createdAt(time).build();
+    return WishlistResponse.builder()
+        .dropId(dropId)
+        .createdAt(time)
+        .build();
   }
 }

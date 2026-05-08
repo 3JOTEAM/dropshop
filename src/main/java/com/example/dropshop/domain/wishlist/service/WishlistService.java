@@ -2,6 +2,7 @@ package com.example.dropshop.domain.wishlist.service;
 
 import com.example.dropshop.common.exception.ErrorCode;
 import com.example.dropshop.common.exception.ServiceException;
+import com.example.dropshop.domain.wishlist.dto.WishlistDto;
 import com.example.dropshop.domain.wishlist.dto.request.WishlistRequest;
 import com.example.dropshop.domain.wishlist.dto.response.WishlistResponse;
 import com.example.dropshop.domain.wishlist.entity.Wishlist;
@@ -16,6 +17,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ZSetOperations;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -46,7 +48,7 @@ public class WishlistService {
     Long dropId = request.getDropId();
 
     if (wishlistRepository.existsByUserIdAndDropId(userId, dropId)) {
-      throw new ServiceException(ErrorCode.EXISTS_BY_USER_AND_DROP);
+      throw new ServiceException(ErrorCode.ALEADY_WISHLIST);
     }
 
     Wishlist saved = wishlistRepository.saveAndFlush(new Wishlist(userId, dropId));
@@ -122,8 +124,8 @@ public class WishlistService {
     }
 
     // Redis miss or 장애 -> DB 조회
-    List<Wishlist> list =
-        wishlistRepository.findByUserIdOrderByCreatedAtDesc(userId, PageRequest.of(0, size));
+    List<Wishlist> list = wishlistRepository.findByUserIdOrderByCreatedAtDesc(userId,
+        PageRequest.of(0, size));
 
     List<WishlistResponse> response =
         list.stream().map(w -> WishlistResponse.build(w.getDropId(), w.getCreatedAt())).toList();

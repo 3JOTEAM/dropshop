@@ -5,5 +5,6 @@ import java.util.List;
 
 /** 찜 커스텀 리포지토리. */
 public interface WishlistRepositoryCustom {
+
   List<WishlistResponse> findRecentByUserId(Long userId, int limit);
 }

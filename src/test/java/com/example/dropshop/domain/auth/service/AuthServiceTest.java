@@ -10,7 +10,6 @@ import com.example.dropshop.common.kafka.producer.EventKafkaProducer;
 import com.example.dropshop.domain.auth.dto.request.LoginRequest;
 import com.example.dropshop.domain.auth.dto.response.TokenResponse;
 import com.example.dropshop.domain.auth.repository.RefreshTokenRepository;
-import com.example.dropshop.domain.auth.sse.SseEmitterService;
 import com.example.dropshop.domain.user.entity.User;
 import com.example.dropshop.domain.user.enums.UserRole;
 import com.example.dropshop.domain.user.repository.UserRepository;

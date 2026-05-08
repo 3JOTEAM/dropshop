@@ -9,7 +9,7 @@ import com.example.dropshop.domain.auth.entity.RefreshToken;
 import com.example.dropshop.domain.auth.event.UserLoginEvent;
 import com.example.dropshop.domain.auth.exception.AuthException;
 import com.example.dropshop.domain.auth.repository.RefreshTokenRepository;
-import com.example.dropshop.domain.auth.sse.SseEmitterService;
+import com.example.dropshop.domain.auth.sse.service.SseEmitterService;
 import com.example.dropshop.domain.user.entity.User;
 import com.example.dropshop.domain.user.repository.UserRepository;
 import java.nio.charset.StandardCharsets;

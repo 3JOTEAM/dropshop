@@ -8,4 +8,5 @@ public class MagicNumbers {
   public static final Long PROCESS_TIME = 10L;
   public static final int BATCH_SIZE = 100;
   public static final int CACHE_LIMIT = 1024 * 1024; // 1MB
+  public static final Long SSE_TIMEOUT_MS = 30 * 60 * 1000L;
 }

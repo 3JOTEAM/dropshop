@@ -71,4 +71,12 @@ public interface DropsRepository extends JpaRepository<Drops, Long> {
   @Modifying(clearAutomatically = true, flushAutomatically = true)
   @Query("update Drops d set d.viewCount = d.viewCount + 1 where d.id = :dropId")
   int incrementViewCount(@Param("dropId") Long dropId);
+
+  @Query("""
+    SELECT d
+    FROM Drops d
+    JOIN FETCH d.product
+    WHERE d.id = :dropId
+""")
+  Optional<Drops> findByDropId(@Param("dropId") Long dropId);
 }

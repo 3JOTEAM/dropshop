@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 public class QueueTokenProducer {
+
   private final KafkaTemplate<String, Object> kafkaTemplate;
 
   /**

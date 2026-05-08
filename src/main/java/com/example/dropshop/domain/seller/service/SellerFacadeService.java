@@ -20,4 +20,15 @@ public class SellerFacadeService {
   public Optional<Seller> findByUser(User user) {
     return sellerRepository.findByUser(user);
   }
+
+  /**
+   * 판매자 아이디로 판매자 정보를 조회한다.
+   *
+   * @param sellerId 판매자 아이디.
+   * @return 리턴.
+   */
+  @Transactional(readOnly = true)
+  public Optional<Seller> findById(Long sellerId) {
+    return sellerRepository.findById(sellerId);
+  }
 }

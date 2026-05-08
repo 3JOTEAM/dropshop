@@ -111,8 +111,9 @@ public enum ErrorCode {
   QUEUE_TOKEN_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 대기열 토큰은 존재하지 않습니다."),
 
   /** Wishlist. */
-  EXISTS_BY_USER_AND_DROP(HttpStatus.CONFLICT, "이미 찜한 상품입니다."),
+  ALEADY_WISHLIST(HttpStatus.CONFLICT, "이미 찜한 상품입니다."),
   DROP_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 드랍은 존재하지 않습니다.");
+
 
   private final HttpStatus status;
   private final String message;

@@ -33,7 +33,9 @@ public class WishlistController {
    */
   @PostMapping
   public ResponseEntity<ApiResponse<WishlistResponse>> create(
-      @AuthenticationPrincipal String userEmail, @RequestBody WishlistRequest request) {
+      @AuthenticationPrincipal String userEmail,
+      @RequestBody WishlistRequest request
+  ) {
     return ResponseEntity.status(HttpStatus.CREATED)
         .body(ApiResponse.created(wishlistsFacadeService.create(userEmail, request)));
   }
@@ -60,7 +62,9 @@ public class WishlistController {
    */
   @GetMapping
   public ResponseEntity<ApiResponse<List<WishlistResponse>>> getRecent(
-      @AuthenticationPrincipal String userEmail, @RequestParam(defaultValue = "10") int size) {
+      @AuthenticationPrincipal String userEmail,
+      @RequestParam(defaultValue = "10") int size
+  ) {
     return ResponseEntity.status(HttpStatus.OK)
         .body(ApiResponse.ok(wishlistsFacadeService.getRecent(userEmail, size)));
   }

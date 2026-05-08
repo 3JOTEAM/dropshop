@@ -23,7 +23,7 @@ public class QueueController {
   /**
    * 대기열 여부 결정
    *
-   * @param dropId 드랍 아이디.
+   * @param dropId    드랍 아이디.
    * @param userEmail 유저 이메일.
    */
   @PostMapping

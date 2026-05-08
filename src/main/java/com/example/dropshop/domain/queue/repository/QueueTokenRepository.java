@@ -17,12 +17,11 @@ public interface QueueTokenRepository extends CrudRepository<QueueToken, Long> {
    * @param queueId 대기열 아이디.
    * @return 리턴.
    */
-  @Query(
-      """
-    SELECT qt
-    FROM QueueToken qt
-    WHERE qt.queue.id = :queueId
-""")
+  @Query("""
+          SELECT qt
+          FROM QueueToken qt
+          WHERE qt.queue.id = :queueId
+      """)
   Optional<QueueToken> findByQueueId(@Param("queueId") Long queueId);
 
   @Query("SELECT qt FROM QueueToken qt WHERE qt.createdAt <= :time")
