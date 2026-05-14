@@ -9,8 +9,10 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-import com.example.dropshop.domain.drops.entity.Drops;
-import com.example.dropshop.domain.drops.enums.DropsStatus;
+import com.example.dropshop.domain.notification.drops.entity.Drops;
+import com.example.dropshop.domain.notification.drops.enums.DropsStatus;
+import com.example.dropshop.domain.notification.drops.service.DropsService;
+import com.example.dropshop.domain.notification.drops.service.DropsStockPreemptionService;
 import com.example.dropshop.domain.product.entity.Product;
 import java.math.BigDecimal;
 import java.time.Duration;

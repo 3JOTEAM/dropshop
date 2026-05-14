@@ -130,6 +130,15 @@ public class PaymentService {
           existingPayment.get(), orderId, amount, paymentMethod);
     }
 
+    // PENDING 상태의 기존 결제가 있으면 merchantPaymentId만 갱신해서 재사용
+    Optional<Payment> pendingPayment = paymentRepository.findByOrderId(orderId);
+    if (pendingPayment.isPresent()
+        && pendingPayment.get().getStatus() == PaymentStatus.PENDING) {
+      Payment existing = pendingPayment.get();
+      existing.renewMerchantPaymentId(merchantPaymentId);
+      return paymentRepository.save(existing);
+    }
+
     validatePaymentNotExists(orderId);
 
     Payment payment = Payment.prepare(orderId, merchantPaymentId, paymentMethod, amount);

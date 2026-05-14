@@ -64,6 +64,14 @@ public class Payment extends BaseEntity {
     return payment;
   }
 
+  /** PENDING 결제의 merchantPaymentId 갱신 (재시도 시). */
+  public void renewMerchantPaymentId(String newMerchantPaymentId) {
+    if (this.status != PaymentStatus.PENDING) {
+      throw new PaymentException(ErrorCode.PAYMENT_FAIL_NOT_ALLOWED);
+    }
+    this.merchantPaymentId = newMerchantPaymentId;
+  }
+
   /** 결제 실패. */
   public void fail() {
     if (this.status != PaymentStatus.PENDING) {

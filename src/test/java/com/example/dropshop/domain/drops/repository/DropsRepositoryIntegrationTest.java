@@ -3,8 +3,9 @@ package com.example.dropshop.domain.drops.repository;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.example.dropshop.common.config.QuerydslConfig;
-import com.example.dropshop.domain.drops.entity.Drops;
-import com.example.dropshop.domain.drops.enums.DropsStatus;
+import com.example.dropshop.domain.notification.drops.entity.Drops;
+import com.example.dropshop.domain.notification.drops.enums.DropsStatus;
+import com.example.dropshop.domain.notification.drops.repository.DropsRepository;
 import com.example.dropshop.domain.product.entity.Product;
 import com.example.dropshop.domain.product.repository.ProductRepository;
 import jakarta.persistence.EntityManager;

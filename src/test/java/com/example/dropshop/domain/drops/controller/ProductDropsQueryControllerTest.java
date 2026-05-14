@@ -8,8 +8,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.example.dropshop.domain.auth.service.TokenBlacklistService;
-import com.example.dropshop.domain.drops.dto.response.DropListItemResponse;
-import com.example.dropshop.domain.drops.service.DropsQueryService;
+import com.example.dropshop.domain.notification.drops.controller.ProductDropsQueryController;
+import com.example.dropshop.domain.notification.drops.dto.response.DropListItemResponse;
+import com.example.dropshop.domain.notification.drops.service.DropsQueryService;
 import java.time.LocalDateTime;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;

@@ -10,9 +10,11 @@ import com.example.dropshop.domain.seller.repository.SellerRepository;
 import com.example.dropshop.domain.user.entity.User;
 import com.example.dropshop.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -55,9 +57,13 @@ public class SellerService {
 
     SellerResponse response = new SellerResponse(sellerRepository.save(seller));
 
-    // Kafka 판매자 신청 이벤트 발행
-    eventKafkaProducer.publishSellerApply(
-        SellerAppliedEvent.of(email, request.getCompanyName(), request.getBusinessNo()));
+    // Kafka 판매자 신청 이벤트 발행 (Kafka 장애 시 신청 자체는 정상 처리)
+    try {
+      eventKafkaProducer.publishSellerApply(
+          SellerAppliedEvent.of(email, request.getCompanyName(), request.getBusinessNo()));
+    } catch (Exception e) {
+      log.warn("[SellerService] 판매자 신청 Kafka 이벤트 발행 실패 - 신청은 정상 처리됨: {}", e.getMessage());
+    }
 
     return response;
   }

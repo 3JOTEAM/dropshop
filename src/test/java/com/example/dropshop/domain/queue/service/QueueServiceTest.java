@@ -10,9 +10,9 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
 import com.example.dropshop.common.exception.ServiceException;
-import com.example.dropshop.domain.drops.entity.Drops;
-import com.example.dropshop.domain.drops.enums.DropsStatus;
-import com.example.dropshop.domain.drops.repository.DropsRepository;
+import com.example.dropshop.domain.notification.drops.entity.Drops;
+import com.example.dropshop.domain.notification.drops.enums.DropsStatus;
+import com.example.dropshop.domain.notification.drops.repository.DropsRepository;
 import com.example.dropshop.domain.queue.dto.response.ThreadHoldResponse;
 import com.example.dropshop.domain.queue.entity.Queue;
 import com.example.dropshop.domain.queue.entity.QueueToken;

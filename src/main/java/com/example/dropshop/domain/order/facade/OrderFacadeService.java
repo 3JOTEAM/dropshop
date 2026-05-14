@@ -1,7 +1,7 @@
 package com.example.dropshop.domain.order.facade;
 
-import com.example.dropshop.domain.drops.entity.Drops;
-import com.example.dropshop.domain.drops.service.DropsFacadeService;
+import com.example.dropshop.domain.notification.drops.entity.Drops;
+import com.example.dropshop.domain.notification.drops.service.DropsFacadeService;
 import com.example.dropshop.domain.order.dto.request.OrderCreateRequest;
 import com.example.dropshop.domain.order.dto.response.OrderCreateResponse;
 import com.example.dropshop.domain.order.dto.response.OrderDetailResponse;

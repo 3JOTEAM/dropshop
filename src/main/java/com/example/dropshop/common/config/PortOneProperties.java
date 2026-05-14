@@ -13,7 +13,8 @@ public record PortOneProperties(
     String webhookSecret,
     @NotBlank(message = "PortOne storeId는 필수입니다.") String storeId,
     @NotBlank(message = "PortOne channelKey는 필수입니다.") String channelKey,
-    @NotBlank(message = "PortOne redirectUrl은 필수입니다.") String redirectUrl) {
+    @NotBlank(message = "PortOne redirectUrl은 필수입니다.") String redirectUrl,
+    boolean mock) {
 
   /**
    * PortOne API 기본 URL을 반환한다.

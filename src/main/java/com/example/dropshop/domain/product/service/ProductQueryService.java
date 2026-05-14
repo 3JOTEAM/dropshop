@@ -2,8 +2,8 @@ package com.example.dropshop.domain.product.service;
 
 import com.example.dropshop.common.config.CacheNames;
 import com.example.dropshop.common.exception.ErrorCode;
-import com.example.dropshop.domain.drops.entity.Drops;
-import com.example.dropshop.domain.drops.service.DropsFacadeService;
+import com.example.dropshop.domain.notification.drops.entity.Drops;
+import com.example.dropshop.domain.notification.drops.service.DropsFacadeService;
 import com.example.dropshop.domain.product.config.ProductConstraints;
 import com.example.dropshop.domain.product.dto.response.ProductDetailResponse;
 import com.example.dropshop.domain.product.dto.response.ProductListItemResponse;

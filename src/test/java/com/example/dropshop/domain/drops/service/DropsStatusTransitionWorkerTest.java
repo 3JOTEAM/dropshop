@@ -7,10 +7,13 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-import com.example.dropshop.domain.drops.entity.Drops;
-import com.example.dropshop.domain.drops.enums.DropsStatus;
-import com.example.dropshop.domain.drops.event.DropStatusChangedEvent;
-import com.example.dropshop.domain.drops.producer.DropsStatusChangedEventProducer;
+import com.example.dropshop.domain.notification.drops.entity.Drops;
+import com.example.dropshop.domain.notification.drops.enums.DropsStatus;
+import com.example.dropshop.domain.notification.drops.event.DropStatusChangedEvent;
+import com.example.dropshop.domain.notification.drops.producer.DropsStatusChangedEventProducer;
+import com.example.dropshop.domain.notification.drops.service.DropsService;
+import com.example.dropshop.domain.notification.drops.service.DropsStatusTransitionWorker;
+import com.example.dropshop.domain.notification.drops.service.DropsStockPreemptionService;
 import com.example.dropshop.domain.product.entity.Product;
 import com.example.dropshop.domain.product.enums.ProductStatus;
 import com.example.dropshop.domain.product.service.ProductDomainFacadeService;

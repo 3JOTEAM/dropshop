@@ -3,7 +3,7 @@ package com.example.dropshop.domain.product.repository;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.example.dropshop.common.config.QuerydslConfig;
-import com.example.dropshop.domain.drops.repository.DropsRepository;
+import com.example.dropshop.domain.notification.drops.repository.DropsRepository;
 import com.example.dropshop.domain.product.entity.Product;
 import com.example.dropshop.domain.product.entity.ProductImage;
 import com.example.dropshop.domain.product.enums.ProductStatus;

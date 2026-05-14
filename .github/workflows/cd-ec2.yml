@@ -2,7 +2,7 @@ name: CD-EC2-Docker
 
 on:
   push:
-    branches: ["dev"]
+    branches: ["main"]
   workflow_dispatch:
 
 concurrency:
@@ -84,6 +84,22 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Add runner IP to EC2 security group
+        id: allow-runner-ip
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ secrets.AWS_REGION }}
+          SG_ID: ${{ secrets.EC2_SECURITY_GROUP_ID }}
+        run: |
+          RUNNER_IP=$(curl -sf https://checkip.amazonaws.com)
+          echo "runner_ip=${RUNNER_IP}" >> "$GITHUB_OUTPUT"
+          aws ec2 authorize-security-group-ingress \
+            --group-id "${SG_ID}" \
+            --protocol tcp \
+            --port 22 \
+            --cidr "${RUNNER_IP}/32"
 
       - name: Prepare production env file
         run: |
@@ -204,4 +220,19 @@ jobs:
 
             docker image prune -af --filter "until=24h"
 
-
+      - name: Remove runner IP from EC2 security group
+        if: always()
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ secrets.AWS_REGION }}
+          SG_ID: ${{ secrets.EC2_SECURITY_GROUP_ID }}
+        run: |
+          RUNNER_IP="${{ steps.allow-runner-ip.outputs.runner_ip }}"
+          if [ -n "${RUNNER_IP}" ]; then
+            aws ec2 revoke-security-group-ingress \
+              --group-id "${SG_ID}" \
+              --protocol tcp \
+              --port 22 \
+              --cidr "${RUNNER_IP}/32" || true
+          fi

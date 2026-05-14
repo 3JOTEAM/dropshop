@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DropShop Payment Redirect</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: "Segoe UI", "Noto Sans KR", sans-serif;
+      background: linear-gradient(180deg, #f6f0e6 0%, #efe4d4 100%);
+      color: #1d1b18;
+    }
+
+    .wrap {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 48px 20px;
+    }
+
+    .panel {
+      background: rgba(255, 250, 242, 0.95);
+      border: 1px solid #d7cbb9;
+      border-radius: 24px;
+      padding: 24px;
+    }
+
+    pre {
+      white-space: pre-wrap;
+      word-break: break-word;
+      background: #fff;
+      border: 1px solid #d7cbb9;
+      border-radius: 16px;
+      padding: 16px;
+      line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div class="panel">
+    <h1>DropShop 결제 리다이렉트</h1>
+    <p id="status">리다이렉트 결과를 확인하는 중입니다...</p>
+    <pre id="result">대기 중</pre>
+  </div>
+</div>
+
+<script>
+  const statusBox = document.getElementById("status");
+  const resultBox = document.getElementById("result");
+
+  function setStatus(message) {
+    statusBox.textContent = message;
+  }
+
+  function setResult(data) {
+    resultBox.textContent = typeof data === "string" ? data : JSON.stringify(data, null, 2);
+  }
+
+  function buildJsonHeaders() {
+    const headers = {
+      "Content-Type": "application/json"
+    };
+    const accessToken = sessionStorage.getItem("dropshopAccessToken");
+    if (accessToken) {
+      headers.Authorization = `Bearer ${accessToken}`;
+    }
+    return headers;
+  }
+
+  async function main() {
+    const params = new URLSearchParams(window.location.search);
+    const paymentId = params.get("paymentId");
+    const code = params.get("code");
+    const message = params.get("message");
+
+    setResult(Object.fromEntries(params.entries()));
+
+    if (!paymentId) {
+      setStatus("paymentId가 없어 confirm을 진행할 수 없습니다.");
+      return;
+    }
+
+    if (code) {
+      setStatus(`PortOne에서 실패 응답이 왔습니다. code=${code}, message=${message ?? ""}`);
+      return;
+    }
+
+    const internalPaymentId = sessionStorage.getItem("dropshopPaymentId");
+    if (!internalPaymentId) {
+      setStatus("세션에 내부 paymentId가 없습니다. 테스트 페이지에서 다시 시작하세요.");
+      return;
+    }
+
+    setStatus("서버 confirm 요청 중...");
+
+    const response = await fetch(`/api/payments/${internalPaymentId}/confirm`, {
+      method: "POST",
+      headers: buildJsonHeaders(),
+      body: JSON.stringify({
+        portOnePaymentId: paymentId
+      })
+    });
+
+    const body = await response.json();
+    setResult(body);
+
+    if (!response.ok || !body.success) {
+      setStatus("confirm 처리 실패");
+      return;
+    }
+
+    setStatus("confirm 처리 완료");
+  }
+
+  main().catch((error) => {
+    setStatus(`오류: ${error.message}`);
+  });
+</script>
+</body>
+</html>

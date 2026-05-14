@@ -1,6 +1,6 @@
 package com.example.dropshop.domain.wishlist.repository;
 
-import static com.example.dropshop.domain.drops.entity.QDrops.drops;
+import static com.example.dropshop.domain.notification.drops.entity.QDrops.drops;
 import static com.example.dropshop.domain.wishlist.entity.QWishlist.wishlist;
 
 import com.example.dropshop.domain.wishlist.dto.response.WishlistResponse;

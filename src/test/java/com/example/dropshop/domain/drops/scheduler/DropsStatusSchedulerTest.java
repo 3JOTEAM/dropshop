@@ -4,7 +4,9 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-import com.example.dropshop.domain.drops.service.DropsStatusTransitionService;
+import com.example.dropshop.domain.notification.drops.scheduler.DropsSchedulerProperties;
+import com.example.dropshop.domain.notification.drops.scheduler.DropsStatusScheduler;
+import com.example.dropshop.domain.notification.drops.service.DropsStatusTransitionService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

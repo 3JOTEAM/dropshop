@@ -1,6 +1,6 @@
 package com.example.dropshop.domain.product.service;
 
-import com.example.dropshop.domain.drops.service.DropsFacadeService;
+import com.example.dropshop.domain.notification.drops.service.DropsFacadeService;
 import com.example.dropshop.domain.order.service.OrderItemFacadeService;
 import com.example.dropshop.domain.product.dto.request.ProductCreateRequest;
 import com.example.dropshop.domain.product.dto.request.ProductImageCreateRequest;

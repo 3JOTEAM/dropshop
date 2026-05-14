@@ -5,7 +5,6 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import org.apache.coyote.BadRequestException;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -18,10 +17,10 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 /**
  * SSE 구독 엔드포인트.
  *
- * <p>클라이언트는 로그인 직후 GET /api/sse/subscribe 를 호출해 서버로부터 실시간 이벤트(force-logout 등)를 수신할 수 있다.
+ * <p>클라이언트는 로그인 직후 GET /api/sse/subscribe 를 호출해
+ * 서버로부터 실시간 이벤트(force-logout 등)를 수신할 수 있다.
  *
  * <p>프론트엔드 사용 예시:
- *
  * <pre>
  *   const es = new EventSource('/api/sse/subscribe');
  *   es.addEventListener('force-logout', () => {
@@ -42,7 +41,7 @@ public class SseController {
   /**
    * SSE 구독. Spring Security가 설정한 인증 정보에서 이메일을 추출한다.
    *
-   * @param userEmail 유저 이메일.
+   * @param userEmail   유저 이메일.
    * @param lastEventId 마지막 이벤트 아이디.
    * @return SseEmitter (text/event-stream)
    */
@@ -50,9 +49,7 @@ public class SseController {
   @Operation(summary = "SSE 연결", description = "로그인한 사용자의 실시간 이벤트 스트림 연결을 생성합니다.")
   public ResponseEntity<SseEmitter> subscribe(
       @AuthenticationPrincipal String userEmail,
-      @RequestHeader(value = "Last-Event-ID", required = false, defaultValue = "")
-          String lastEventId)
-      throws BadRequestException {
+      @RequestHeader(value = "Last-Event-ID", required = false, defaultValue = "") String lastEventId) {
 
     return ResponseEntity.ok(sseEmitterService.subscribe(userEmail, lastEventId));
   }

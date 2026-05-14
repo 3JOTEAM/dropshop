@@ -1,8 +1,8 @@
 package com.example.dropshop.common.config;
 
 import com.example.dropshop.domain.dashboard.service.SellerDashboardRefreshService;
-import com.example.dropshop.domain.drops.entity.Drops;
-import com.example.dropshop.domain.drops.repository.DropsRepository;
+import com.example.dropshop.domain.notification.drops.entity.Drops;
+import com.example.dropshop.domain.notification.drops.repository.DropsRepository;
 import com.example.dropshop.domain.order.entity.Order;
 import com.example.dropshop.domain.order.entity.OrderItem;
 import com.example.dropshop.domain.order.repository.OrderRepository;

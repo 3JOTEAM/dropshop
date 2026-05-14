@@ -1,6 +1,6 @@
 package com.example.dropshop.domain.product.repository;
 
-import static com.example.dropshop.domain.drops.entity.QDrops.drops;
+import static com.example.dropshop.domain.notification.drops.entity.QDrops.drops;
 import static com.example.dropshop.domain.product.entity.QProduct.product;
 
 import com.example.dropshop.domain.product.entity.Product;

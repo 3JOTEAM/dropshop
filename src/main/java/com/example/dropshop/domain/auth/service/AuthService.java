@@ -17,10 +17,12 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AuthService {
@@ -61,8 +63,12 @@ public class AuthService {
             },
             () -> refreshTokenRepository.save(new RefreshToken(user.getEmail(), hashedToken)));
 
-    // Kafka 로그인 이벤트 발행
-    eventKafkaProducer.publishUserLogin(UserLoginEvent.of(user.getEmail()));
+    // Kafka 로그인 이벤트 발행 (Kafka 장애 시 로그인 자체는 정상 처리)
+    try {
+      eventKafkaProducer.publishUserLogin(UserLoginEvent.of(user.getEmail()));
+    } catch (Exception e) {
+      log.warn("[AuthService] 로그인 Kafka 이벤트 발행 실패 - 로그인은 정상 처리됨: {}", e.getMessage());
+    }
 
     return new TokenResponse(accessToken, refreshToken);
   }

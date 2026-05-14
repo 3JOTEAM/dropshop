@@ -1,0 +1,227 @@
+// DropShop ERD - dbdiagram.io
+// https://dbdiagram.io 에서 붙여넣기 하세요
+
+Table users {
+  id bigint [pk, increment]
+  email varchar [not null, unique]
+  password varchar [not null]
+  nickname varchar [not null]
+  status varchar [not null, note: 'ACTIVE, DELETED']
+  role varchar [not null, note: 'USER, SELLER, ADMIN']
+  deleted_at datetime
+  created_at datetime [not null]
+  modified_at datetime [not null]
+}
+
+Table refresh_token {
+  id bigint [pk, increment]
+  email varchar [not null, unique]
+  hashed_token varchar [not null]
+}
+
+Table sellers {
+  id bigint [pk, increment]
+  user_id bigint [not null, unique]
+  company_name varchar [not null]
+  representative_name varchar [not null]
+  phone_number varchar [not null]
+  business_no varchar(10) [not null, unique]
+  brand_name varchar [not null]
+  brand_logo varchar
+  account_info varchar [not null]
+  status varchar [not null, note: 'PENDING, APPROVED, SUSPENDED']
+  created_at datetime [not null]
+  modified_at datetime [not null]
+}
+
+Table terms {
+  id bigint [pk, increment]
+  title varchar [not null]
+  content text [not null]
+  is_required boolean [not null]
+  version varchar [not null]
+}
+
+Table products {
+  id bigint [pk, increment]
+  seller_id bigint [not null]
+  name varchar(100) [not null]
+  category varchar(100) [not null]
+  price decimal(10,2) [not null]
+  discount_rate int [not null]
+  discount_amount decimal(10,2) [not null]
+  sale_price decimal(10,2) [not null]
+  stock int [not null]
+  thumbnail_url varchar(500) [not null]
+  description text [not null]
+  specification text [not null]
+  delivery_info text [not null]
+  refund_policy text [not null]
+  status varchar(20) [not null, note: 'HIDDEN, READY, ON_SALE, OUT_OF_STOCK']
+  version bigint
+  created_at datetime [not null]
+  modified_at datetime [not null]
+}
+
+Table product_images {
+  id bigint [pk, increment]
+  product_id bigint [not null]
+  image_url varchar(500) [not null]
+  sort_order int [not null]
+  is_thumbnail boolean [not null]
+  created_at datetime [not null]
+  modified_at datetime [not null]
+}
+
+Table drops {
+  id bigint [pk, increment]
+  product_id bigint [not null]
+  status varchar(20) [not null, note: 'SCHEDULED, ACTIVE, FINISHED']
+  start_at datetime [not null]
+  end_at datetime [not null]
+  total_stock bigint [not null]
+  remain_stock bigint [not null]
+  purchase_limit bigint [not null]
+  use_queue boolean [not null]
+  view_count bigint [not null]
+  version bigint
+  created_at datetime [not null]
+  modified_at datetime [not null]
+}
+
+Table orders {
+  id bigint [pk, increment]
+  user_id bigint [not null]
+  drop_id bigint [not null]
+  order_number varchar [not null, unique]
+  total_amount decimal [not null]
+  status varchar [not null, note: 'PENDING, PAID, CANCELLED, REFUNDED']
+  hold_expired_at datetime [not null]
+  created_at datetime [not null]
+  modified_at datetime [not null]
+}
+
+Table order_items {
+  id bigint [pk, increment]
+  order_id bigint [not null]
+  product_id bigint [not null]
+  price_snapshot decimal [not null]
+  sale_price_snapshot decimal [not null]
+  discount_amount_snapshot decimal [not null]
+  quantity int [not null, default: 1]
+  thumbnail_url_snapshot varchar [not null]
+  created_at datetime [not null]
+  modified_at datetime [not null]
+}
+
+Table payments {
+  id bigint [pk, increment]
+  order_id bigint [not null, unique]
+  merchant_payment_id varchar(100) [not null, unique]
+  transaction_id varchar
+  payment_method varchar(50) [not null, note: 'CARD, TRANSFER']
+  amount decimal [not null]
+  status varchar [not null, note: 'PENDING, COMPLETED, FAILED']
+  paid_at datetime
+  created_at datetime [not null]
+  modified_at datetime [not null]
+}
+
+Table payment_outbox {
+  id bigint [pk, increment]
+  topic varchar(100) [not null]
+  message_key varchar(100) [not null]
+  payload text [not null]
+  status varchar(20) [not null, note: 'PENDING, SENT, FAILED']
+  attempts int [not null, default: 0]
+  next_attempt_at datetime
+  created_at datetime [not null]
+  modified_at datetime [not null]
+}
+
+Table refunds {
+  id bigint [pk, increment]
+  payment_id bigint [not null]
+  refund_amount decimal [not null]
+  refund_reason varchar
+  status varchar [not null, note: 'PENDING, APPROVED, PROCESSING, COMPLETED, REJECTED']
+  approved_at datetime
+  completed_at datetime
+  created_at datetime [not null]
+  modified_at datetime [not null]
+}
+
+Table queues {
+  id bigint [pk, increment]
+  user_id bigint [not null]
+  drop_id bigint [not null]
+  status varchar [not null, note: 'WAITING, READY, ENTERED, EXPIRED']
+  entered_at datetime [not null]
+  allowed_at datetime
+  expired_at datetime
+
+  indexes {
+    (user_id, drop_id) [unique]
+  }
+}
+
+Table queue_tokens {
+  id bigint [pk, increment]
+  queue_id bigint [not null]
+  queue_token varchar
+  created_at datetime [not null]
+}
+
+Table wishlists {
+  id bigint [pk, increment]
+  user_id bigint [not null]
+  drop_id bigint [not null]
+  created_at datetime [not null]
+
+  indexes {
+    (user_id, drop_id) [unique]
+  }
+}
+
+Table notifications {
+  id bigint [pk, increment]
+  user_id bigint [not null]
+  type varchar [not null, note: 'DROP_START, PURCHASE_SUCCESS, PURCHASE_FAIL, ORDER_ADD, STOCK_EMPTY, REVIEW_ADD']
+  message varchar [not null]
+  status varchar [not null, note: 'UNREAD, READ']
+  product_id bigint
+  created_at datetime [not null]
+  read_at datetime
+}
+
+Table notification_settings {
+  id bigint [pk, increment]
+  user_id bigint
+  seller_id bigint
+  is_drop_enabled boolean [not null]
+  is_order_enabled boolean [not null]
+  is_stock_enabled boolean [not null]
+  is_review_enabled boolean [not null]
+  created_at datetime [not null]
+  modified_at datetime [not null]
+}
+
+// Relations
+Ref: sellers.user_id - users.id
+Ref: products.seller_id > sellers.id
+Ref: product_images.product_id > products.id
+Ref: drops.product_id > products.id
+Ref: orders.user_id > users.id
+Ref: orders.drop_id > drops.id
+Ref: order_items.order_id > orders.id
+Ref: order_items.product_id > products.id
+Ref: payments.order_id - orders.id
+Ref: refunds.payment_id > payments.id
+Ref: queues.user_id > users.id
+Ref: queues.drop_id > drops.id
+Ref: queue_tokens.queue_id - queues.id
+Ref: wishlists.user_id > users.id
+Ref: wishlists.drop_id > drops.id
+Ref: notifications.user_id > users.id
+Ref: notification_settings.user_id > users.id
+Ref: notification_settings.seller_id > sellers.id

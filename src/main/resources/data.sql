@@ -5,7 +5,7 @@
 
 -- Admin 계정 자동 생성
 -- 이메일: admin@test.com / 비밀번호: Test1234!
-INSERT INTO users (email, password, nickname, status, role, created_at, modified_at)
+INSERT IGNORE INTO users (email, password, nickname, status, role, created_at, modified_at)
 VALUES (
   'admin@test.com',
   '$2a$10$UVg.BRQCweVzdNxImL9wpeMsNKm8Yi6j00XflpRJsVKqIK4Ycf5h6',

@@ -1,6 +1,14 @@
 package com.example.dropshop.common.config.kafka;
 
+import static com.example.dropshop.common.constant.kafka.topic.KafkaTopics.TOPIC_DROPS_STATUS_CHANGED;
+import static com.example.dropshop.common.constant.kafka.topic.KafkaTopics.TOPIC_ORDER_CANCELLED;
+import static com.example.dropshop.common.constant.kafka.topic.KafkaTopics.TOPIC_ORDER_PAID;
+import static com.example.dropshop.common.constant.kafka.topic.KafkaTopics.TOPIC_ORDER_REFUNDED;
+import static com.example.dropshop.common.constant.kafka.topic.KafkaTopics.TOPIC_ORDER_STOCK_RESTORED;
 import static com.example.dropshop.common.constant.kafka.topic.KafkaTopics.TOPIC_PAYMENT_COMPLETED;
+import static com.example.dropshop.common.constant.kafka.topic.KafkaTopics.TOPIC_PAYMENT_FAILED;
+import static com.example.dropshop.common.constant.kafka.topic.KafkaTopics.TOPIC_QUEUE_TOKEN;
+import static com.example.dropshop.common.constant.kafka.topic.KafkaTopics.TOPIC_READY_QUEUE_TOKEN;
 import static com.example.dropshop.common.constant.kafka.topic.KafkaTopics.TOPIC_SELLER_APPLY;
 import static com.example.dropshop.common.constant.kafka.topic.KafkaTopics.TOPIC_USER_LOGIN;
 import static com.example.dropshop.common.constant.kafka.topic.KafkaTopics.TOPIC_USER_SIGNUP;
@@ -88,6 +96,78 @@ public class KafkaTopicConfig {
   @Bean
   public NewTopic paymentCompletedDltTopic() {
     return TopicBuilder.name(TOPIC_PAYMENT_COMPLETED + ".DLT")
+        .partitions(partitions)
+        .replicas(replicationFactor)
+        .build();
+  }
+
+  /** 대기열 토큰 토픽. Consumer: QueueTokenListener */
+  @Bean
+  public NewTopic queueTokenTopic() {
+    return TopicBuilder.name(TOPIC_QUEUE_TOKEN)
+        .partitions(partitions)
+        .replicas(replicationFactor)
+        .build();
+  }
+
+  /** 준비된 대기열 토큰 토픽. Consumer: ReadyQueueTokenListener */
+  @Bean
+  public NewTopic readyQueueTokenTopic() {
+    return TopicBuilder.name(TOPIC_READY_QUEUE_TOKEN)
+        .partitions(partitions)
+        .replicas(replicationFactor)
+        .build();
+  }
+
+  /** 결제 실패 이벤트 토픽. */
+  @Bean
+  public NewTopic paymentFailedTopic() {
+    return TopicBuilder.name(TOPIC_PAYMENT_FAILED)
+        .partitions(partitions)
+        .replicas(replicationFactor)
+        .build();
+  }
+
+  /** 드랍 상태 변경 이벤트 토픽. */
+  @Bean
+  public NewTopic dropsStatusChangedTopic() {
+    return TopicBuilder.name(TOPIC_DROPS_STATUS_CHANGED)
+        .partitions(partitions)
+        .replicas(replicationFactor)
+        .build();
+  }
+
+  /** 주문 결제 완료 이벤트 토픽. */
+  @Bean
+  public NewTopic orderPaidTopic() {
+    return TopicBuilder.name(TOPIC_ORDER_PAID)
+        .partitions(partitions)
+        .replicas(replicationFactor)
+        .build();
+  }
+
+  /** 주문 취소 이벤트 토픽. */
+  @Bean
+  public NewTopic orderCancelledTopic() {
+    return TopicBuilder.name(TOPIC_ORDER_CANCELLED)
+        .partitions(partitions)
+        .replicas(replicationFactor)
+        .build();
+  }
+
+  /** 주문 환불 이벤트 토픽. */
+  @Bean
+  public NewTopic orderRefundedTopic() {
+    return TopicBuilder.name(TOPIC_ORDER_REFUNDED)
+        .partitions(partitions)
+        .replicas(replicationFactor)
+        .build();
+  }
+
+  /** 주문 재고 복구 이벤트 토픽. */
+  @Bean
+  public NewTopic orderStockRestoredTopic() {
+    return TopicBuilder.name(TOPIC_ORDER_STOCK_RESTORED)
         .partitions(partitions)
         .replicas(replicationFactor)
         .build();

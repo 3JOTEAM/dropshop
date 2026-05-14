@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DropShop 결제 테스트</title>
+  <script src="https://cdn.portone.io/v2/browser-sdk.js"></script>
+  <style>
+    :root {
+      --bg: #f6f0e6;
+      --panel: rgba(255,250,242,0.97);
+      --ink: #1d1b18;
+      --muted: #6f675d;
+      --line: #d7cbb9;
+      --brand: #b35c2e;
+      --brand-light: #efe1cc;
+      --ok: #1e7b4a;
+      --err: #b42318;
+      --info: #1a5fa8;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Segoe UI", "Noto Sans KR", sans-serif;
+      background: linear-gradient(160deg, #fff7e9 0%, #ede3d4 100%);
+      color: var(--ink);
+      min-height: 100vh;
+      padding: 32px 16px 64px;
+    }
+    .wrap { max-width: 720px; margin: 0 auto; }
+
+    /* Header */
+    .header { margin-bottom: 28px; }
+    .header h1 { font-size: 28px; font-weight: 800; }
+    .header p { color: var(--muted); font-size: 14px; margin-top: 4px; }
+
+    /* Step indicator */
+    .steps {
+      display: flex; gap: 0; margin-bottom: 24px;
+      border-radius: 14px; overflow: hidden; border: 1px solid var(--line);
+    }
+    .step-tab {
+      flex: 1; padding: 10px 4px; text-align: center;
+      font-size: 12px; font-weight: 700; cursor: default;
+      background: #f0e8da; color: var(--muted);
+      border-right: 1px solid var(--line);
+      transition: all 0.2s;
+    }
+    .step-tab:last-child { border-right: none; }
+    .step-tab.active { background: var(--brand); color: #fff; }
+    .step-tab.done { background: var(--ok); color: #fff; }
+
+    /* Cards */
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      padding: 24px;
+      box-shadow: 0 16px 40px rgba(61,39,17,0.08);
+      margin-bottom: 16px;
+    }
+    .card-title {
+      font-size: 16px; font-weight: 800; margin-bottom: 16px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .badge {
+      display: inline-block; padding: 2px 8px; border-radius: 999px;
+      font-size: 11px; font-weight: 700;
+    }
+    .badge-ok { background: #d1fadf; color: var(--ok); }
+    .badge-warn { background: #fef3c7; color: #92400e; }
+    .badge-err { background: #fee2e2; color: var(--err); }
+
+    /* Form */
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .form-group { display: flex; flex-direction: column; gap: 5px; }
+    .form-group.full { grid-column: 1/-1; }
+    label { font-size: 12px; font-weight: 700; color: var(--muted); }
+    input, select {
+      padding: 10px 13px; border: 1px solid var(--line); border-radius: 10px;
+      font-size: 14px; background: #fff; width: 100%;
+      outline: none; transition: border-color 0.15s;
+    }
+    input:focus, select:focus { border-color: var(--brand); }
+    input[readonly] { background: #f9f5ef; color: var(--muted); }
+
+    /* Buttons */
+    .btn-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
+    button {
+      border: none; border-radius: 999px; padding: 11px 22px;
+      font-size: 14px; font-weight: 700; cursor: pointer;
+      transition: opacity 0.15s, transform 0.1s;
+    }
+    button:active { transform: scale(0.97); }
+    button:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-primary { background: var(--brand); color: #fff; }
+    .btn-secondary { background: var(--brand-light); color: var(--ink); }
+    .btn-sm { padding: 7px 14px; font-size: 12px; }
+
+    /* Status / Log */
+    .status-bar {
+      margin-top: 14px; padding: 12px 16px; border-radius: 12px;
+      font-size: 13px; font-weight: 600; background: #fff; border: 1px solid var(--line);
+    }
+    .status-bar.ok { color: var(--ok); background: #f0fdf4; border-color: #bbf7d0; }
+    .status-bar.err { color: var(--err); background: #fff1f2; border-color: #fecdd3; }
+    .status-bar.info { color: var(--info); background: #eff6ff; border-color: #bfdbfe; }
+
+    .log {
+      margin-top: 10px; padding: 12px; border-radius: 10px;
+      background: #fafafa; border: 1px solid #eee;
+      font-family: Consolas, monospace; font-size: 11px; line-height: 1.6;
+      max-height: 200px; overflow-y: auto; white-space: pre-wrap; word-break: break-all;
+      color: #444; display: none;
+    }
+    .log.visible { display: block; }
+
+    /* Order list */
+    .order-item {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 14px; border: 1px solid var(--line); border-radius: 12px;
+      margin-bottom: 8px; background: #fff;
+    }
+    .order-info { font-size: 13px; }
+    .order-info strong { font-size: 15px; display: block; margin-bottom: 2px; }
+    .order-info span { color: var(--muted); font-size: 12px; }
+
+    /* Drop item */
+    .drop-item {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 14px; border: 1px solid var(--line); border-radius: 12px;
+      margin-bottom: 8px; background: #fff;
+    }
+    .drop-info { font-size: 13px; }
+    .drop-info strong { font-size: 15px; display: block; margin-bottom: 2px; }
+    .drop-info span { color: var(--muted); font-size: 12px; }
+
+    /* Payment summary */
+    .pay-summary {
+      background: #fff8f0; border: 1px solid #f0d9b5; border-radius: 12px;
+      padding: 14px 16px; margin-bottom: 16px;
+    }
+    .pay-summary .row {
+      display: flex; justify-content: space-between;
+      font-size: 13px; margin-bottom: 6px;
+    }
+    .pay-summary .row:last-child { margin-bottom: 0; font-weight: 700; font-size: 15px; }
+    .pay-summary .row span:first-child { color: var(--muted); }
+
+    /* Section hidden/visible */
+    .section { display: none; }
+    .section.active { display: block; }
+
+    @media (max-width: 560px) {
+      .form-row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div class="header">
+    <h1>🛒 DropShop 결제 테스트</h1>
+    <p>로그인부터 PortOne 결제 완료까지 한 페이지에서 처리합니다.</p>
+  </div>
+
+  <div class="steps">
+    <div class="step-tab active" id="tab-1">1. 로그인</div>
+    <div class="step-tab" id="tab-2">2. 주문 확인</div>
+    <div class="step-tab" id="tab-3">3. 결제</div>
+  </div>
+
+  <!-- SECTION 1: Login -->
+  <div class="section active" id="sec-login">
+    <div class="card">
+      <div class="card-title">🔐 로그인</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>이메일</label>
+          <input id="loginEmail" type="email" value="1@email.com" placeholder="이메일">
+        </div>
+        <div class="form-group">
+          <label>비밀번호</label>
+          <input id="loginPassword" type="password" value="Abc12345678!" placeholder="비밀번호">
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn-primary" id="loginBtn" onclick="doLogin()">로그인</button>
+      </div>
+      <div class="status-bar" id="loginStatus">이메일과 비밀번호를 입력하고 로그인하세요.</div>
+      <div class="log" id="loginLog"></div>
+    </div>
+  </div>
+
+  <!-- SECTION 2: Orders & Drops -->
+  <div class="section" id="sec-orders">
+    <div class="card">
+      <div class="card-title">
+        📋 나의 주문
+        <button class="btn-secondary btn-sm" onclick="loadOrders()">새로고침</button>
+      </div>
+      <div id="ordersList"><p style="color:var(--muted);font-size:13px;">로딩 중...</p></div>
+      <div class="status-bar" id="ordersStatus" style="display:none;"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">
+        🔥 진행 중인 드랍스
+        <button class="btn-secondary btn-sm" onclick="loadDrops()">새로고침</button>
+      </div>
+      <div id="dropsList"><p style="color:var(--muted);font-size:13px;">로딩 중...</p></div>
+      <div class="status-bar" id="dropsStatus" style="display:none;"></div>
+    </div>
+  </div>
+
+  <!-- SECTION 3: Payment -->
+  <div class="section" id="sec-payment">
+    <div class="card">
+      <div class="card-title">💳 결제</div>
+
+      <div class="pay-summary" id="paySummary">
+        <div class="row"><span>주문 번호</span><span id="sumOrderId">-</span></div>
+        <div class="row"><span>상품</span><span id="sumProduct">-</span></div>
+        <div class="row"><span>결제 수단</span>
+          <span>
+            <select id="payMethodSelect" style="padding:4px 8px;font-size:13px;border-radius:6px;">
+              <option value="CARD">카드 (CARD)</option>
+              <option value="TRANSFER">계좌이체 (TRANSFER)</option>
+            </select>
+          </span>
+        </div>
+        <div class="row"><span>결제 금액</span><span id="sumAmount">-</span></div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn-primary" id="payBtn" onclick="startPayment()">💳 결제 진행</button>
+        <button class="btn-secondary" onclick="goBack()">← 주문 목록으로</button>
+      </div>
+
+      <div class="status-bar" id="payStatus">결제 버튼을 누르면 시작됩니다.</div>
+      <div class="log visible" id="payLog"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ─── State ───────────────────────────────────────────────
+  let accessToken = null;
+  let currentOrder = null;  // { orderId, totalAmount, status, orderNumber }
+  let currentDrop = null;   // { dropId, productId, productName }
+
+  // ─── Helpers ─────────────────────────────────────────────
+  function authHeaders() {
+    const h = { 'Content-Type': 'application/json' };
+    if (accessToken) h['Authorization'] = `Bearer ${accessToken}`;
+    return h;
+  }
+
+  function setStatus(id, msg, type = '') {
+    const el = document.getElementById(id);
+    el.style.display = '';
+    el.className = `status-bar ${type}`.trim();
+    el.textContent = msg;
+  }
+
+  function appendLog(id, msg) {
+    const el = document.getElementById(id);
+    el.classList.add('visible');
+    el.textContent += (el.textContent ? '\n' : '') + msg;
+    el.scrollTop = el.scrollHeight;
+  }
+
+  function clearLog(id) {
+    const el = document.getElementById(id);
+    el.textContent = '';
+  }
+
+  function fmtAmount(n) {
+    return Number(n).toLocaleString() + '원';
+  }
+
+  function goToStep(step) {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.step-tab').forEach(t => t.classList.remove('active'));
+    document.getElementById(`sec-${step}`).classList.add('active');
+    document.getElementById(`tab-${{'login':1,'orders':2,'payment':3}[step]}`).classList.add('active');
+  }
+
+  function markDone(tabNum) {
+    document.getElementById(`tab-${tabNum}`).classList.remove('active');
+    document.getElementById(`tab-${tabNum}`).classList.add('done');
+  }
+
+  // ─── Step 1: Login ────────────────────────────────────────
+  async function doLogin() {
+    const email = document.getElementById('loginEmail').value.trim();
+    const pw = document.getElementById('loginPassword').value.trim();
+    if (!email || !pw) { setStatus('loginStatus', '이메일과 비밀번호를 입력하세요.', 'err'); return; }
+
+    document.getElementById('loginBtn').disabled = true;
+    setStatus('loginStatus', '로그인 중...', 'info');
+
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password: pw })
+      });
+      const body = await res.json();
+      appendLog('loginLog', JSON.stringify(body, null, 2));
+
+      if (!res.ok || !body.success) {
+        setStatus('loginStatus', `로그인 실패: ${body.message ?? res.status}`, 'err');
+        return;
+      }
+
+      accessToken = body.data;
+      setStatus('loginStatus', `✅ 로그인 성공! (${email})`, 'ok');
+      markDone(1);
+      goToStep('orders');
+      await Promise.all([loadOrders(), loadDrops()]);
+    } catch (e) {
+      setStatus('loginStatus', `오류: ${e.message}`, 'err');
+    } finally {
+      document.getElementById('loginBtn').disabled = false;
+    }
+  }
+
+  // ─── Step 2: Orders ───────────────────────────────────────
+  async function loadOrders() {
+    const container = document.getElementById('ordersList');
+    container.innerHTML = '<p style="color:var(--muted);font-size:13px;">로딩 중...</p>';
+
+    try {
+      const res = await fetch('/api/orders?page=0&size=10', { headers: authHeaders() });
+      const body = await res.json();
+
+      if (!res.ok || !body.success) {
+        container.innerHTML = `<p style="color:var(--err);font-size:13px;">조회 실패: ${body.message ?? res.status}</p>`;
+        return;
+      }
+
+      const orders = body.data?.content ?? body.data ?? [];
+
+      if (orders.length === 0) {
+        container.innerHTML = '<p style="color:var(--muted);font-size:13px;">주문 내역이 없습니다. 아래 드랍스에서 주문을 생성하세요.</p>';
+        return;
+      }
+
+      container.innerHTML = orders.map(o => {
+        const isPending = o.status === 'PENDING';
+        const statusLabel = { PENDING: '결제 대기', PAID: '결제 완료', CANCELLED: '취소됨', REFUNDED: '환불됨' }[o.status] ?? o.status;
+        const badgeClass = isPending ? 'badge-warn' : o.status === 'PAID' ? 'badge-ok' : 'badge-err';
+
+        return `<div class="order-item">
+          <div class="order-info">
+            <strong>주문 #${o.orderId}</strong>
+            <span>${fmtAmount(o.totalAmount)} &nbsp;·&nbsp; <span class="badge ${badgeClass}">${statusLabel}</span></span>
+          </div>
+          ${isPending ? `<button class="btn-primary btn-sm" onclick="selectOrder(${o.orderId}, ${o.totalAmount})">결제하기</button>` : ''}
+        </div>`;
+      }).join('');
+    } catch (e) {
+      container.innerHTML = `<p style="color:var(--err);font-size:13px;">오류: ${e.message}</p>`;
+    }
+  }
+
+  // ─── Step 2: Drops ────────────────────────────────────────
+  async function loadDrops() {
+    const container = document.getElementById('dropsList');
+    container.innerHTML = '<p style="color:var(--muted);font-size:13px;">로딩 중...</p>';
+
+    try {
+      const res = await fetch('/api/drops?status=ACTIVE&size=10', { headers: authHeaders() });
+      const body = await res.json();
+
+      if (!res.ok || !body.success) {
+        container.innerHTML = `<p style="color:var(--err);font-size:13px;">조회 실패: ${body.message ?? res.status}</p>`;
+        return;
+      }
+
+      const drops = body.data?.content ?? body.data ?? [];
+
+      if (drops.length === 0) {
+        container.innerHTML = '<p style="color:var(--muted);font-size:13px;">현재 진행 중인 드랍스가 없습니다.</p>';
+        return;
+      }
+
+      container.innerHTML = drops.map(d => {
+        return `<div class="drop-item">
+          <div class="drop-info">
+            <strong>${d.productName ?? '상품 #' + d.productId}</strong>
+            <span>잔여 ${d.remainStock ?? '?'}개 &nbsp;·&nbsp; Drop #${d.dropId}</span>
+          </div>
+          <button class="btn-secondary btn-sm" onclick="joinQueueAndOrder(${d.dropId}, ${d.productId}, '${d.productName ?? ''}')">
+            주문 생성
+          </button>
+        </div>`;
+      }).join('');
+    } catch (e) {
+      container.innerHTML = `<p style="color:var(--err);font-size:13px;">오류: ${e.message}</p>`;
+    }
+  }
+
+  // ─── Join Queue → Create Order ────────────────────────────
+  async function joinQueueAndOrder(dropId, productId, productName) {
+    const statusEl = document.getElementById('dropsStatus');
+    statusEl.style.display = '';
+    statusEl.className = 'status-bar info';
+    statusEl.textContent = '대기열 진입 중...';
+
+    try {
+      // Join queue
+      const qRes = await fetch(`/api/queues?dropId=${dropId}`, {
+        method: 'POST',
+        headers: authHeaders()
+      });
+      const qBody = await qRes.json();
+
+      if (!qRes.ok || !qBody.success) {
+        // 이미 대기열에 있는 경우 등 - 주문 직접 시도
+        statusEl.className = 'status-bar info';
+        statusEl.textContent = `대기열 응답: ${qBody.message ?? '오류'} → 주문 직접 시도 중...`;
+        await tryCreateOrder(dropId, productId, null, productName);
+        return;
+      }
+
+      const qData = qBody.data;
+      const result = qData?.result;
+      const admissionToken = qData?.admissionToken;
+
+      if (result === 'ADMITTED' && admissionToken) {
+        statusEl.textContent = '✅ 입장 확인! 주문 생성 중...';
+        await tryCreateOrder(dropId, productId, admissionToken, productName);
+      } else if (result === 'WAITING') {
+        statusEl.className = 'status-bar';
+        statusEl.textContent = `대기 중... 앞 대기 ${qData.aheadCount ?? '?'}명 · 예상 ${qData.estimatedWaitSeconds ?? '?'}초 후 입장`;
+      } else {
+        // Try with token anyway if it exists, otherwise try without
+        await tryCreateOrder(dropId, productId, admissionToken ?? null, productName);
+      }
+    } catch (e) {
+      statusEl.className = 'status-bar err';
+      statusEl.textContent = `오류: ${e.message}`;
+    }
+  }
+
+  async function tryCreateOrder(dropId, productId, queueToken, productName) {
+    const statusEl = document.getElementById('dropsStatus');
+    const payload = { dropId, productId };
+    if (queueToken) payload.queueToken = queueToken;
+
+    const oRes = await fetch('/api/orders', {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify(payload)
+    });
+    const oBody = await oRes.json();
+
+    if (!oRes.ok || !oBody.success) {
+      statusEl.className = 'status-bar err';
+      statusEl.textContent = `주문 생성 실패: ${oBody.message ?? oRes.status}`;
+      return;
+    }
+
+    const order = oBody.data;
+    statusEl.className = 'status-bar ok';
+    statusEl.textContent = `✅ 주문 생성 완료! 주문 #${order.orderId} (${fmtAmount(order.totalAmount)})`;
+
+    // Go to payment
+    selectOrder(order.orderId, order.totalAmount, productName);
+    await loadOrders();
+  }
+
+  // ─── Select Order → Go to Payment ────────────────────────
+  function selectOrder(orderId, totalAmount, productName) {
+    currentOrder = { orderId, totalAmount };
+    document.getElementById('sumOrderId').textContent = `#${orderId}`;
+    document.getElementById('sumProduct').textContent = productName ?? '-';
+    document.getElementById('sumAmount').textContent = fmtAmount(totalAmount);
+    clearLog('payLog');
+    setStatus('payStatus', '결제 버튼을 누르면 시작됩니다.', '');
+    markDone(2);
+    goToStep('payment');
+    document.getElementById('tab-3').classList.add('active');
+  }
+
+  function goBack() {
+    goToStep('orders');
+    document.getElementById('tab-2').classList.add('active');
+    document.getElementById('tab-2').classList.remove('done');
+    document.getElementById('tab-3').classList.remove('active', 'done');
+  }
+
+  // ─── Step 3: Payment ─────────────────────────────────────
+  async function startPayment() {
+    if (!currentOrder) { setStatus('payStatus', '주문을 먼저 선택하세요.', 'err'); return; }
+
+    const payMethod = document.getElementById('payMethodSelect').value;
+    const merchantPaymentId = `payment-${crypto.randomUUID().replace(/-/g,'')}`;
+    clearLog('payLog');
+
+    document.getElementById('payBtn').disabled = true;
+
+    try {
+      // 1. Prepare
+      setStatus('payStatus', '1/3 결제 준비 중...', 'info');
+      appendLog('payLog', `[prepare] orderId=${currentOrder.orderId} amount=${currentOrder.totalAmount} method=${payMethod}`);
+
+      const prepRes = await fetch('/api/payments/prepare', {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify({
+          orderId: currentOrder.orderId,
+          amount: Number(currentOrder.totalAmount),
+          merchantPaymentId,
+          paymentMethod: payMethod
+        })
+      });
+      const prepBody = await prepRes.json();
+      appendLog('payLog', JSON.stringify(prepBody, null, 2));
+
+      if (!prepRes.ok || !prepBody.success) {
+        setStatus('payStatus', `결제 준비 실패: ${prepBody.message ?? prepRes.status}`, 'err');
+        return;
+      }
+
+      const paymentId = prepBody.data.paymentId;
+      appendLog('payLog', `\n✅ paymentId=${paymentId}`);
+
+      // 2. Get PortOne request info
+      setStatus('payStatus', '2/3 PortOne 정보 조회 중...', 'info');
+      const poReqRes = await fetch(`/api/payments/${paymentId}/portone-request`, { headers: authHeaders() });
+      const poReqBody = await poReqRes.json();
+      appendLog('payLog', '\n[portone-request]\n' + JSON.stringify(poReqBody, null, 2));
+
+      if (!poReqRes.ok || !poReqBody.success) {
+        setStatus('payStatus', `PortOne 정보 조회 실패: ${poReqBody.message ?? poReqRes.status}`, 'err');
+        return;
+      }
+
+      const poReq = poReqBody.data;
+
+      // 3. Call PortOne SDK
+      // 리다이렉트 방식 대비: sessionStorage에 저장
+      sessionStorage.setItem('dropshopAccessToken', accessToken);
+      sessionStorage.setItem('dropshopPaymentId', String(paymentId));
+
+      setStatus('payStatus', '3/3 결제창 호출 중...', 'info');
+      appendLog('payLog', `\n[PortOne SDK]\nstoreId=${poReq.storeId}\nchannelKey=${poReq.channelKey}\npayMethod=${poReq.payMethod}\namount=${poReq.amount}\ncurrency=${poReq.currency}`);
+
+      const poResponse = await PortOne.requestPayment({
+        storeId: poReq.storeId,
+        channelKey: poReq.channelKey,
+        paymentId: poReq.merchantPaymentId,
+        orderName: poReq.orderName,
+        totalAmount: Number(poReq.amount),
+        currency: poReq.currency,
+        payMethod: poReq.payMethod,
+        redirectUrl: poReq.redirectUrl,
+        customer: {
+          fullName: 'DropShop Tester',
+          phoneNumber: '010-0000-0000',
+          email: document.getElementById('loginEmail').value
+        }
+      });
+
+      appendLog('payLog', '\n[SDK response]\n' + JSON.stringify(poResponse, null, 2));
+
+      // Redirect-based: no response
+      if (!poResponse) {
+        setStatus('payStatus', '리다이렉트 방식 결제 진행 중... 잠시 후 redirect.html로 이동합니다.', 'info');
+        return;
+      }
+
+      // Error from SDK
+      if (poResponse.code) {
+        setStatus('payStatus', `결제 취소/실패: ${poResponse.message ?? poResponse.code}`, 'err');
+        return;
+      }
+
+      // 4. Confirm
+      const portOnePaymentId = poResponse.paymentId ?? poReq.merchantPaymentId;
+      setStatus('payStatus', '결제 confirm 중...', 'info');
+
+      const cfmRes = await fetch(`/api/payments/${paymentId}/confirm`, {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify({ portOnePaymentId })
+      });
+      const cfmBody = await cfmRes.json();
+      appendLog('payLog', '\n[confirm]\n' + JSON.stringify(cfmBody, null, 2));
+
+      if (!cfmRes.ok || !cfmBody.success) {
+        setStatus('payStatus', `Confirm 실패: ${cfmBody.message ?? cfmRes.status}`, 'err');
+        return;
+      }
+
+      setStatus('payStatus', '🎉 결제 완료! 모든 단계가 성공했습니다.', 'ok');
+      document.getElementById('tab-3').classList.add('done');
+    } catch (e) {
+      setStatus('payStatus', `오류: ${e.message}`, 'err');
+      appendLog('payLog', `\n[ERROR] ${e.message}`);
+    } finally {
+      document.getElementById('payBtn').disabled = false;
+    }
+  }
+
+  // ─── Enter key support ────────────────────────────────────
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      const sec = document.querySelector('.section.active');
+      if (sec?.id === 'sec-login') doLogin();
+    }
+  });
+</script>
+</body>
+</html>

@@ -40,7 +40,11 @@ public class SecurityConfig {
                     .permitAll()
                     .requestMatchers("/api/users/signup")
                     .permitAll()
-                    .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html")
+                    // 로컬 개발/테스트 전용 (운영 배포 시 제거)
+                    .requestMatchers("/api/dev/**")
+                    .permitAll()
+                    // static 테스트 페이지
+                    .requestMatchers("/test.html", "/redirect.html")
                     .permitAll()
                     // 관리자 전용 경로
                     .requestMatchers("/api/admin/**")

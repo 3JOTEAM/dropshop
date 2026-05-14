@@ -7,7 +7,10 @@ import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-import com.example.dropshop.domain.drops.entity.Drops;
+import com.example.dropshop.domain.notification.drops.entity.Drops;
+import com.example.dropshop.domain.notification.drops.service.DropsService;
+import com.example.dropshop.domain.notification.drops.service.DropsStatusTransitionService;
+import com.example.dropshop.domain.notification.drops.service.DropsStatusTransitionWorker;
 import com.example.dropshop.domain.product.entity.Product;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;

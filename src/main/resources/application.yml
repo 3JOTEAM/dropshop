@@ -1,12 +1,12 @@
 spring:
   config:
-    import: optional:file:./application-local.yml
+    import: optional:classpath:application-local.yml
   main:
     allow-circular-references: true
   jpa:
     database-platform: org.hibernate.dialect.MySQLDialect
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: update
     show-sql: false
     properties:
       hibernate:
@@ -28,7 +28,7 @@ spring:
       port: ${REDIS_PORT:6379}
       password: ${REDIS_PASSWORD:}
       ssl:
-        enabled: ${REDIS_USE_SSL:true}
+        enabled: ${REDIS_USE_SSL:false}
       timeout: 60000ms
       lettuce:
         pool:
@@ -41,10 +41,10 @@ spring:
 # PortOne 설정
 portone:
   api-base-url: ${PORTONE_API_BASE_URL:https://api.portone.io}
-  api-secret: "dummy_secret"
-  store-id: "store-dummy"
-  channel-key: "channel-dummy"
-  redirect-url: ${PORTONE_REDIRECT_URL:http://localhost:8080/payments/redirect}
+  api-secret: ${PORTONE_API_SECRET:dummy_secret}
+  store-id: "store-a23d4f87-e7ef-4db0-9278-907b1dcd28ac"
+  channel-key: "channel-key-3e716c4e-acba-451f-bc74-8fa144806102"
+  redirect-url: ${PORTONE_REDIRECT_URL:http://localhost:8080/redirect.html}
 
 # AWS 설정
 cloud:

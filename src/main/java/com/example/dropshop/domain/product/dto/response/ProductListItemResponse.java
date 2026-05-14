@@ -1,6 +1,6 @@
 package com.example.dropshop.domain.product.dto.response;
 
-import com.example.dropshop.domain.drops.entity.Drops;
+import com.example.dropshop.domain.notification.drops.entity.Drops;
 import com.example.dropshop.domain.product.entity.Product;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
