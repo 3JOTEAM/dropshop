@@ -192,8 +192,8 @@ jobs:
               exit 1
             fi
 
-            echo "Waiting 60s for app to start..."
-            sleep 60
+            echo "Waiting 90s for app to start..."
+            sleep 90
             health_status=0
             for i in $(seq 1 24); do
               HEALTH="$(docker exec dropshop-app wget -qO- http://localhost:8080/actuator/health 2>&1)" || true

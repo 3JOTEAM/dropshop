@@ -38,8 +38,7 @@ public class UserService {
     // 회원가입 이벤트를 동일 트랜잭션 내 아웃박스 테이블에 저장한다.
     // 스케줄러(UserEventOutboxPublisher)가 5초마다 Kafka로 발행하므로
     // DB 커밋 이후 Kafka 장애가 발생해도 이벤트가 유실되지 않는다.
-    userEventOutboxPublisher.save(
-        UserSignupEvent.of(user.getEmail()), hashEmail(user.getEmail()));
+    userEventOutboxPublisher.save(UserSignupEvent.of(user.getEmail()), hashEmail(user.getEmail()));
   }
 
   @Transactional
