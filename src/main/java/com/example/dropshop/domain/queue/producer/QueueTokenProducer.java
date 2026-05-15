@@ -28,13 +28,17 @@ public class QueueTokenProducer {
           .whenComplete(
               (result, ex) -> {
                 if (ex != null) {
-                  log.warn("[QueueTokenProducer] 대기열 토큰 Kafka 발행 실패 - dropId: {}, cause: {}",
-                      threadHoldResponse.getDropsId(), ex.getMessage());
+                  log.warn(
+                      "[QueueTokenProducer] 대기열 토큰 Kafka 발행 실패 - dropId: {}, cause: {}",
+                      threadHoldResponse.getDropsId(),
+                      ex.getMessage());
                 }
               });
     } catch (Exception e) {
-      log.warn("[QueueTokenProducer] 대기열 토큰 Kafka 발행 요청 실패 - dropId: {}, cause: {}",
-          threadHoldResponse.getDropsId(), e.getMessage());
+      log.warn(
+          "[QueueTokenProducer] 대기열 토큰 Kafka 발행 요청 실패 - dropId: {}, cause: {}",
+          threadHoldResponse.getDropsId(),
+          e.getMessage());
     }
   }
 }

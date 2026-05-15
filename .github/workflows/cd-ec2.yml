@@ -194,11 +194,12 @@ jobs:
 
             APP_PORT="$(awk -F= '/^APP_PORT=/{print $2}' .env | tail -n1 | tr -d '"'"'"$'\r')"
             APP_PORT="${APP_PORT:-8080}"
+            HOST_IP="$(hostname -I | awk '{print $1}')"
             echo "Waiting 60s for app to start..."
             sleep 60
             health_status=0
             for i in $(seq 1 24); do
-              STATUS=$(curl -4 -sf -o /dev/null -w "%{http_code}" http://127.0.0.1:${APP_PORT}/actuator/health || true)
+              STATUS=$(curl -sf -o /dev/null -w "%{http_code}" http://${HOST_IP}:${APP_PORT}/actuator/health || true)
               if [ "${STATUS}" = "200" ]; then
                 echo "Health check passed (attempt ${i})"
                 health_status=1
