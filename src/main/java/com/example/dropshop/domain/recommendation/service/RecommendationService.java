@@ -42,54 +42,60 @@ public class RecommendationService {
    */
   @SuppressWarnings("unchecked")
   public RecommendationResponse recommend(String query) {
-    // 1. 사용자 질의 임베딩
-    List<Float> queryVector = openAiClient.embed(query);
+    try {
+      // 1. 사용자 질의 임베딩
+      List<Float> queryVector = openAiClient.embed(query);
 
-    // 2. Pinecone 유사 상품 검색
-    List<Map<String, Object>> matches = pineconeClient.query(queryVector, TOP_K);
+      // 2. Pinecone 유사 상품 검색
+      List<Map<String, Object>> matches = pineconeClient.query(queryVector, TOP_K);
 
-    if (matches.isEmpty()) {
-      return RecommendationResponse.empty(query);
-    }
+      if (matches.isEmpty()) {
+        return RecommendationResponse.empty(query);
+      }
 
-    // 3. 검색된 상품 정보 추출
-    List<String> productInfos =
-        matches.stream()
-            .map(
-                match -> {
-                  Map<String, Object> metadata = (Map<String, Object>) match.get("metadata");
-                  if (metadata == null) {
-                    return "";
-                  }
-                  return "- %s (%s): %s"
-                      .formatted(
-                          metadata.getOrDefault("name", ""),
-                          metadata.getOrDefault("category", ""),
-                          metadata.getOrDefault("description", ""));
-                })
-            .filter(s -> !s.isEmpty())
-            .collect(Collectors.toList());
+      // 3. 검색된 상품 정보 추출
+      List<String> productInfos =
+          matches.stream()
+              .map(
+                  match -> {
+                    Map<String, Object> metadata = (Map<String, Object>) match.get("metadata");
+                    if (metadata == null) {
+                      return "";
+                    }
+                    return "- %s (%s): %s"
+                        .formatted(
+                            metadata.getOrDefault("name", ""),
+                            metadata.getOrDefault("category", ""),
+                            metadata.getOrDefault("description", ""));
+                  })
+              .filter(s -> !s.isEmpty())
+              .collect(Collectors.toList());
 
-    List<Long> productIds =
-        matches.stream()
-            .map(
-                match -> {
-                  Map<String, Object> metadata = (Map<String, Object>) match.get("metadata");
-                  if (metadata == null) {
+      List<Long> productIds =
+          matches.stream()
+              .map(
+                  match -> {
+                    Map<String, Object> metadata = (Map<String, Object>) match.get("metadata");
+                    if (metadata == null) {
+                      return null;
+                    }
+                    Object id = metadata.get("productId");
+                    if (id instanceof Number n) {
+                      return n.longValue();
+                    }
                     return null;
-                  }
-                  Object id = metadata.get("productId");
-                  if (id instanceof Number n) {
-                    return n.longValue();
-                  }
-                  return null;
-                })
-            .filter(id -> id != null)
-            .collect(Collectors.toList());
+                  })
+              .filter(id -> id != null)
+              .collect(Collectors.toList());
 
-    // 4. GPT 추천 문구 생성
-    String recommendation = openAiClient.recommend(query, productInfos);
+      // 4. GPT 추천 문구 생성
+      String recommendation = openAiClient.recommend(query, productInfos);
 
-    return RecommendationResponse.of(query, recommendation, productIds);
+      return RecommendationResponse.of(query, recommendation, productIds);
+
+    } catch (Exception e) {
+      log.error("[Recommendation] 추천 서비스 오류 - query: {}, cause: {}", query, e.getMessage(), e);
+      return RecommendationResponse.fallback(query);
+    }
   }
 }
