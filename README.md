@@ -176,7 +176,7 @@ Dropshop은 드롭 기반 커머스 서비스를 위한 백엔드 프로젝트�
 - Kafka는 이벤트 기반 비동기 처리와 서비스 간 흐름 분리에 활용됩니다.
 
 
-![서비스 구조](docs/images/system-architecture.png)
+![서비스 구조](<img width="821" height="601" alt="dropshop" src="https://github.com/user-attachments/assets/2dc50b18-4aa5-43f3-adf6-fad2ec47e18d" />)
 
 ## 와이어프레임
 
