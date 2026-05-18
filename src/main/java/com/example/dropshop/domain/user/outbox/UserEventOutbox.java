@@ -51,12 +51,8 @@ public class UserEventOutbox extends BaseEntity {
   @Column(nullable = false)
   private int attempts;
 
-  /**
-   * 다음 재시도 허용 시각. null이면 즉시 처리 가능(PENDING 초기 상태).
-   * FAILED 전이 시 지수 백오프로 계산한 미래 시각이 설정된다.
-   */
-  @Column
-  private LocalDateTime nextAttemptAt;
+  /** 다음 재시도 허용 시각. null이면 즉시 처리 가능(PENDING 초기 상태). FAILED 전이 시 지수 백오프로 계산한 미래 시각이 설정된다. */
+  @Column private LocalDateTime nextAttemptAt;
 
   public UserEventOutbox(String topic, String messageKey, String payload) {
     this.topic = topic;
