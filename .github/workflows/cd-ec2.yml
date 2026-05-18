@@ -192,19 +192,17 @@ jobs:
               exit 1
             fi
 
-            APP_PORT="$(awk -F= '/^APP_PORT=/{print $2}' .env | tail -n1 | tr -d '"'"'"$'\r')"
-            APP_PORT="${APP_PORT:-8080}"
-            echo "Waiting 60s for app to start..."
-            sleep 60
+            echo "Waiting 90s for app to start..."
+            sleep 90
             health_status=0
             for i in $(seq 1 24); do
-              STATUS=$(curl -sf -o /dev/null -w "%{http_code}" http://localhost:${APP_PORT}/actuator/health || true)
-              if [ "${STATUS}" = "200" ]; then
+              HEALTH="$(docker exec dropshop-app wget -qO- http://localhost:8080/actuator/health 2>&1)" || true
+              if echo "${HEALTH}" | grep -q '"status":"UP"'; then
                 echo "Health check passed (attempt ${i})"
                 health_status=1
                 break
               fi
-              echo "Attempt ${i}/24: status=${STATUS}, retrying in 10s..."
+              echo "Attempt ${i}/24: not ready, retrying in 10s..."
               sleep 10
             done
 

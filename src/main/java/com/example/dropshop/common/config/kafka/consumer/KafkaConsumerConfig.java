@@ -73,6 +73,7 @@ public class KafkaConsumerConfig {
         new ConcurrentKafkaListenerContainerFactory<>();
 
     factory.setConsumerFactory(queueTokenConsumerFactory());
+    factory.setAutoStartup(false);
 
     return factory;
   }
@@ -92,6 +93,7 @@ public class KafkaConsumerConfig {
         new ConcurrentKafkaListenerContainerFactory<>();
 
     factory.setConsumerFactory(readyQueueTokenConsumerFactory());
+    factory.setAutoStartup(false);
 
     return factory;
   }
@@ -131,6 +133,7 @@ public class KafkaConsumerConfig {
         new ConcurrentKafkaListenerContainerFactory<>();
     factory.setConsumerFactory(consumerFactory);
     factory.setCommonErrorHandler(errorHandler);
+    factory.setAutoStartup(false);
     return factory;
   }
 

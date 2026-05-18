@@ -22,8 +22,11 @@ public class OrderKafkaEventListener {
     try {
       orderEventProducer.sendStatusChanged(event);
     } catch (Exception e) {
-      log.warn("[OrderKafkaEventListener] 주문 상태 변경 이벤트 발행 실패 - orderId: {}, status: {}, cause: {}",
-          event.getOrderId(), event.getOrderStatus(), e.getMessage());
+      log.warn(
+          "[OrderKafkaEventListener] 주문 상태 변경 이벤트 발행 실패 - orderId: {}, status: {}, cause: {}",
+          event.getOrderId(),
+          event.getOrderStatus(),
+          e.getMessage());
     }
   }
 
@@ -35,8 +38,10 @@ public class OrderKafkaEventListener {
       try {
         orderEventProducer.sendStockRestored(event);
       } catch (Exception e) {
-        log.warn("[OrderKafkaEventListener] 주문 재고 복원 이벤트 발행 실패 - orderId: {}, cause: {}",
-            event.getOrderId(), e.getMessage());
+        log.warn(
+            "[OrderKafkaEventListener] 주문 재고 복원 이벤트 발행 실패 - orderId: {}, cause: {}",
+            event.getOrderId(),
+            e.getMessage());
       }
     }
   }

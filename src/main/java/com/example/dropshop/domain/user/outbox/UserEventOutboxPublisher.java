@@ -19,8 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * 유저 이벤트 아웃박스 발행 서비스.
  *
- * <p>회원가입 트랜잭션과 동일한 DB 커밋에 이벤트를 저장하고,
- * 스케줄러가 5초마다 Kafka로 발행한다. ShedLock으로 멀티 인스턴스 중복 실행을 방지한다.
+ * <p>회원가입 트랜잭션과 동일한 DB 커밋에 이벤트를 저장하고, 스케줄러가 5초마다 Kafka로 발행한다. ShedLock으로 멀티 인스턴스 중복 실행을 방지한다.
  */
 @Slf4j
 @Service
@@ -36,10 +35,7 @@ public class UserEventOutboxPublisher {
   private final KafkaTemplate<String, Object> activityEventKafkaTemplate;
   private final ObjectMapper objectMapper;
 
-  /**
-   * 회원가입 이벤트를 아웃박스 테이블에 저장한다.
-   * 호출부의 트랜잭션에 참여하여 DB 커밋과 원자적으로 처리된다.
-   */
+  /** 회원가입 이벤트를 아웃박스 테이블에 저장한다. 호출부의 트랜잭션에 참여하여 DB 커밋과 원자적으로 처리된다. */
   @Transactional
   public void save(UserSignupEvent event, String messageKey) {
     String payload;
