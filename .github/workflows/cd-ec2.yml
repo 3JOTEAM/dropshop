@@ -192,17 +192,16 @@ jobs:
               exit 1
             fi
 
-            echo "Waiting 90s for app to start..."
-            sleep 90
+            echo "Waiting for app to become healthy (up to 5m)..."
             health_status=0
-            for i in $(seq 1 24); do
-              HEALTH="$(docker exec dropshop-app wget -qO- http://127.0.0.1:8080/actuator/health 2>&1)" || true
-              if echo "${HEALTH}" | grep -q '"status":"UP"'; then
+            for i in $(seq 1 30); do
+              STATUS="$(docker inspect --format='{{.State.Health.Status}}' dropshop-app 2>/dev/null || echo 'unknown')"
+              echo "Attempt ${i}/30: health=${STATUS}"
+              if [ "${STATUS}" = "healthy" ]; then
                 echo "Health check passed (attempt ${i})"
                 health_status=1
                 break
               fi
-              echo "Attempt ${i}/24: not ready, retrying in 10s..."
               sleep 10
             done
 
