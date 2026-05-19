@@ -17,9 +17,9 @@ services:
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/actuator/health"]
       interval: 10s
-      timeout: 5s
-      retries: 30
-      start_period: 60s
+      timeout: 10s
+      retries: 60
+      start_period: 30s
     networks:
       - dropshop-net
 
