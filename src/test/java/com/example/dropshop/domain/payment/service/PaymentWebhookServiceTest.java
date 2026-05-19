@@ -183,18 +183,25 @@ class PaymentWebhookServiceTest {
   }
 
   @Test
-  @DisplayName("웹훅 실패 상태는 결제만 실패 처리하고 주문은 즉시 취소하지 않는다")
-  void handleWebhook_failedStatus_failsPaymentOnly() {
+  @DisplayName("웹훅 실패 상태는 결제 실패와 주문 취소를 함께 반영한다")
+  void handleWebhook_failedStatus_cancelsOrderToo() {
     given(paymentRepository.findByMerchantPaymentId("payment-test-123"))
         .willReturn(Optional.of(payment));
     given(orderFacadeService.findOrderForPaymentWebhook(1L)).willReturn(order);
+    given(orderFacadeService.cancelOrderByPaymentFailure(order))
+        .willAnswer(
+            invocation -> {
+              order.cancel();
+              return order;
+            });
     given(portOneClient.getPayment("payment-test-123"))
         .willReturn(portOnePayment("FAILED", "tx-failed", "79000"));
 
     Payment result = paymentWebhookService.handleWebhook("payment-test-123");
 
     assertThat(result.getStatus()).isEqualTo(PaymentStatus.FAILED);
-    verify(orderFacadeService, never()).cancelOrderByPaymentFailure(any(Order.class));
+    assertThat(order.getStatus()).isEqualTo(OrderStatus.CANCELLED);
+    verify(orderFacadeService, times(1)).cancelOrderByPaymentFailure(order);
     verify(sellerDashboardRefreshService, never()).refreshForOrder(any(Order.class));
     verify(sseEmitterService, times(1)).sendPaymentFailNotification(eq(order), anyString());
     verify(paymentOutboxPublisher, times(1)).save(any());
@@ -209,12 +216,19 @@ class PaymentWebhookServiceTest {
     given(paymentRepository.findByMerchantPaymentId("payment-test-123"))
         .willReturn(Optional.of(payment));
     given(orderFacadeService.findOrderForPaymentWebhook(1L)).willReturn(order);
+    given(orderFacadeService.cancelOrderByPaymentFailure(order))
+        .willAnswer(
+            invocation -> {
+              order.cancel();
+              return order;
+            });
     given(portOneClient.getPayment("payment-test-123"))
         .willReturn(portOnePayment("FAILED", "tx-failed", "79000"));
 
     Payment result = paymentWebhookService.handleWebhook(request);
 
     assertThat(result.getStatus()).isEqualTo(PaymentStatus.FAILED);
+    assertThat(order.getStatus()).isEqualTo(OrderStatus.CANCELLED);
   }
 
   @Test

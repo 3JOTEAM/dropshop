@@ -2,6 +2,7 @@ package com.example.dropshop.domain.refund.repository;
 
 import com.example.dropshop.domain.refund.entity.Refund;
 import com.example.dropshop.domain.refund.enums.RefundStatus;
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -25,4 +26,6 @@ public interface RefundRepository extends JpaRepository<Refund, Long> {
    * @return 환불 목록
    */
   List<Refund> findAllByPaymentIdOrderByCreatedAtDesc(Long paymentId);
+
+  List<Refund> findAllByStatusAndModifiedAtBefore(RefundStatus status, LocalDateTime modifiedAt);
 }

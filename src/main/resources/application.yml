@@ -93,12 +93,10 @@ logging:
 server:
   port: 8080
 
+jwt:
+  secret: ${JWT_SECRET:secret-key-secret-key-secret-key-123456} # 운영 환경에서는 반드시 환경변수로 주입
+
 openai:
   api-key: "dummy"
   embedding-model: "text-embedding-3-small"
-  chat-model: "gpt-4o-mini"
-
-pinecone:
-  api-key: "dummy"
-  host: "https://dummy.pinecone.io"
-  index-name: "dropshop-products"
+  c
