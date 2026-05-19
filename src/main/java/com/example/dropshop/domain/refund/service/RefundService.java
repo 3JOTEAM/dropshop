@@ -35,6 +35,7 @@ public class RefundService {
   private final PortOneClient portOneClient;
   private final OrderFacadeService orderFacadeService;
   private final RefundCompletionWorker refundCompletionWorker;
+  private final RefundRecoveryService refundRecoveryService;
   private final RedisLockService redisLockService;
   private final TransactionTemplate transactionTemplate;
 
@@ -199,6 +200,13 @@ public class RefundService {
 
     if (refund.getStatus() == RefundStatus.COMPLETED) {
       return refund;
+    }
+
+    if (refund.getStatus() == RefundStatus.PROCESSING) {
+      Refund recovered = refundRecoveryService.recoverProcessingRefund(refundId);
+      if (recovered.getStatus() == RefundStatus.COMPLETED) {
+        return recovered;
+      }
     }
 
     RefundCompletionWorker.RefundCompletionCommand command =

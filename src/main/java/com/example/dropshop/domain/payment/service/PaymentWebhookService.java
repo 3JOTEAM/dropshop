@@ -100,6 +100,9 @@ public class PaymentWebhookService {
 
     if (paymentVerificationService.isFailureStatus(portOnePayment.status())) {
       payment.fail();
+      if (order.getStatus() == OrderStatus.PENDING) {
+        orderFacadeService.cancelOrderByPaymentFailure(order);
+      }
       registerAfterCommit(
           () ->
               sseEmitterService.sendPaymentFailNotification(

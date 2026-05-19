@@ -106,6 +106,7 @@ class PaymentServiceTest {
     given(paymentRepository.existsByOrderId(1L)).willReturn(false);
     given(paymentRepository.findByMerchantPaymentId("payment-test-123"))
         .willReturn(Optional.empty());
+    given(paymentRepository.findByOrderId(1L)).willReturn(Optional.empty());
     given(paymentRepository.save(any(Payment.class)))
         .willAnswer(invocation -> invocation.getArgument(0));
 
@@ -152,6 +153,23 @@ class PaymentServiceTest {
             "test@test.com", 1L, new BigDecimal("79000"), "payment-test-123", PaymentMethod.CARD);
 
     assertThat(result).isSameAs(payment);
+    verify(paymentRepository, never()).save(any(Payment.class));
+    verify(paymentRepository, never()).existsByOrderId(any());
+  }
+
+  @Test
+  @DisplayName("결제 준비 재시도 - 같은 주문의 기존 PENDING 결제가 있으면 merchantPaymentId를 바꾸지 않고 재사용한다")
+  void preparePayment_existingPendingPayment_reusesOriginalMerchantPaymentId() {
+    given(orderFacadeService.findOrderForPayment(1L, "test@test.com")).willReturn(order);
+    given(paymentRepository.findByMerchantPaymentId("payment-retry-456")).willReturn(Optional.empty());
+    given(paymentRepository.findByOrderId(1L)).willReturn(Optional.of(payment));
+
+    Payment result =
+        paymentService.preparePayment(
+            "test@test.com", 1L, new BigDecimal("79000"), "payment-retry-456", PaymentMethod.CARD);
+
+    assertThat(result).isSameAs(payment);
+    assertThat(result.getMerchantPaymentId()).isEqualTo("payment-test-123");
     verify(paymentRepository, never()).save(any(Payment.class));
     verify(paymentRepository, never()).existsByOrderId(any());
   }
