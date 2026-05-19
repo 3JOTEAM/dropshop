@@ -54,6 +54,8 @@ class RefundServiceTest {
 
   @Mock private RefundCompletionWorker refundCompletionWorker;
 
+  @Mock private RefundRecoveryService refundRecoveryService;
+
   @Mock private RedisLockService redisLockService;
 
   @Mock private TransactionTemplate transactionTemplate;
@@ -122,14 +124,17 @@ class RefundServiceTest {
   void completeRefund_success() {
     refund.approve();
 
-    Refund processingRefund = refund;
-    processingRefund.startProcessing();
+    Refund completedRefund = Refund.create(1L, new BigDecimal("79000"), "단순 변심");
+    ReflectionTestUtils.setField(completedRefund, "id", 1L);
+    completedRefund.approve();
+    completedRefund.startProcessing();
+    completedRefund.complete();
     RefundCompletionWorker.RefundCompletionCommand command =
         new RefundCompletionWorker.RefundCompletionCommand(
             1L, 1L, "payment-test-123", new BigDecimal("79000"), "단순 변심");
 
     // completeRefundInternal의 transactionTemplate.execute 블록 내부에서 소유권 검증에 필요한 스텁
-    given(refundRepository.findById(1L)).willReturn(Optional.of(processingRefund));
+    given(refundRepository.findById(1L)).willReturn(Optional.of(refund));
     given(paymentRepository.findById(1L)).willReturn(Optional.of(payment));
     given(orderFacadeService.findOrderForPayment(1L, "test@test.com")).willReturn(order);
 
@@ -137,9 +142,8 @@ class RefundServiceTest {
     given(refundCompletionWorker.finalizeRefundCompletion(1L, 1L))
         .willAnswer(
             invocation -> {
-              processingRefund.complete();
               order.refund();
-              return processingRefund;
+              return completedRefund;
             });
 
     Refund result = refundService.completeRefund(1L, "test@test.com");
@@ -191,5 +195,65 @@ class RefundServiceTest {
     assertThat(result.getStatus()).isEqualTo(RefundStatus.COMPLETED);
     verify(portOneClient, never()).cancelPayment(anyString(), any(), anyString());
     verify(refundCompletionWorker, never()).prepareRefundCompletion(any(), anyString());
+  }
+
+  @Test
+  @DisplayName("PROCESSING 환불 재요청 시 PortOne 복구 결과가 COMPLETED면 그대로 반환한다")
+  void completeRefund_processingRecoveredToCompleted_returnsRecoveredRefund() {
+    refund.approve();
+    refund.startProcessing();
+    Refund completedRefund = Refund.create(1L, new BigDecimal("79000"), "단순 변심");
+    ReflectionTestUtils.setField(completedRefund, "id", 1L);
+    completedRefund.approve();
+    completedRefund.startProcessing();
+    completedRefund.complete();
+
+    given(refundRepository.findById(1L)).willReturn(Optional.of(refund));
+    given(paymentRepository.findById(1L)).willReturn(Optional.of(payment));
+    given(orderFacadeService.findOrderForPayment(1L, "test@test.com")).willReturn(order);
+    given(refundRecoveryService.recoverProcessingRefund(1L)).willReturn(completedRefund);
+
+    Refund result = refundService.completeRefund(1L, "test@test.com");
+
+    assertThat(result.getStatus()).isEqualTo(RefundStatus.COMPLETED);
+    verify(refundRecoveryService, times(1)).recoverProcessingRefund(1L);
+    verify(portOneClient, never()).cancelPayment(anyString(), any(), anyString());
+    verify(refundCompletionWorker, never()).prepareRefundCompletion(any(), anyString());
+  }
+
+  @Test
+  @DisplayName("PROCESSING 환불 재요청 시 APPROVED로 복구되면 환불 완료를 다시 진행한다")
+  void completeRefund_processingRecoveredToApproved_retriesRefundFlow() {
+    refund.approve();
+    refund.startProcessing();
+    Refund recoveredRefund = Refund.create(1L, new BigDecimal("79000"), "단순 변심");
+    ReflectionTestUtils.setField(recoveredRefund, "id", 1L);
+    recoveredRefund.approve();
+
+    RefundCompletionWorker.RefundCompletionCommand command =
+        new RefundCompletionWorker.RefundCompletionCommand(
+            1L, 1L, "payment-test-123", new BigDecimal("79000"), "단순 변심");
+
+    given(refundRepository.findById(1L)).willReturn(Optional.of(refund));
+    given(paymentRepository.findById(1L)).willReturn(Optional.of(payment));
+    given(orderFacadeService.findOrderForPayment(1L, "test@test.com")).willReturn(order);
+    given(refundRecoveryService.recoverProcessingRefund(1L)).willReturn(recoveredRefund);
+    given(refundCompletionWorker.prepareRefundCompletion(1L, "test@test.com")).willReturn(command);
+    given(refundCompletionWorker.finalizeRefundCompletion(1L, 1L))
+        .willAnswer(
+            invocation -> {
+              refund.complete();
+              order.refund();
+              return refund;
+            });
+
+    Refund result = refundService.completeRefund(1L, "test@test.com");
+
+    assertThat(result.getStatus()).isEqualTo(RefundStatus.COMPLETED);
+    verify(refundRecoveryService, times(1)).recoverProcessingRefund(1L);
+    verify(portOneClient, times(1))
+        .cancelPayment("payment-test-123", new BigDecimal("79000"), "단순 변심");
+    verify(refundCompletionWorker, times(1)).prepareRefundCompletion(1L, "test@test.com");
+    verify(refundCompletionWorker, times(1)).finalizeRefundCompletion(1L, 1L);
   }
 }
