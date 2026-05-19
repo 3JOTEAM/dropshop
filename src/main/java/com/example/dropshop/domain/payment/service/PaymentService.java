@@ -130,13 +130,13 @@ public class PaymentService {
           existingPayment.get(), orderId, amount, paymentMethod);
     }
 
-    // PENDING 상태의 기존 결제가 있으면 merchantPaymentId만 갱신해서 재사용
+    // 이미 PortOne에 노출된 merchantPaymentId는 외부 웹훅/확정 응답 매핑에 사용되므로
+    // 재시도 시에도 덮어쓰지 않고 기존 결제를 그대로 재사용한다.
     Optional<Payment> pendingPayment = paymentRepository.findByOrderId(orderId);
     if (pendingPayment.isPresent()
         && pendingPayment.get().getStatus() == PaymentStatus.PENDING) {
-      Payment existing = pendingPayment.get();
-      existing.renewMerchantPaymentId(merchantPaymentId);
-      return paymentRepository.save(existing);
+      return validateIdempotentPreparedPayment(
+          pendingPayment.get(), orderId, amount, paymentMethod);
     }
 
     validatePaymentNotExists(orderId);
