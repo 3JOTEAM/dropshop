@@ -192,21 +192,25 @@ jobs:
               exit 1
             fi
 
-            echo "Waiting for app to become healthy (up to 5m)..."
+            echo "Waiting for app to become healthy (up to 10m)..."
             health_status=0
-            for i in $(seq 1 30); do
+            for i in $(seq 1 60); do
               STATUS="$(docker inspect --format='{{.State.Health.Status}}' dropshop-app 2>/dev/null || echo 'unknown')"
-              echo "Attempt ${i}/30: health=${STATUS}"
+              echo "Attempt ${i}/60: health=${STATUS}"
               if [ "${STATUS}" = "healthy" ]; then
                 echo "Health check passed (attempt ${i})"
                 health_status=1
+                break
+              fi
+              if [ "${STATUS}" = "unhealthy" ]; then
+                echo "Container marked unhealthy, aborting early."
                 break
               fi
               sleep 10
             done
 
             if [ "${health_status}" -eq 0 ]; then
-              echo "Health check failed after 300s."
+              echo "Health check failed after 600s."
               rollback
               exit 1
             fi
