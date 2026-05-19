@@ -196,7 +196,7 @@ jobs:
             sleep 90
             health_status=0
             for i in $(seq 1 24); do
-              HEALTH="$(docker exec dropshop-app wget -qO- http://localhost:8080/actuator/health 2>&1)" || true
+              HEALTH="$(docker exec dropshop-app wget -qO- http://127.0.0.1:8080/actuator/health 2>&1)" || true
               if echo "${HEALTH}" | grep -q '"status":"UP"'; then
                 echo "Health check passed (attempt ${i})"
                 health_status=1
