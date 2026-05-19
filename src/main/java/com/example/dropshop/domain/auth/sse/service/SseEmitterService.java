@@ -30,8 +30,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 /**
  * SSE(Server-Sent Events) 연결을 관리하는 서비스.
  *
- * <p>이메일을 키로 SseEmitter를 관리하며, 중복 로그인 시 기존 디바이스에
- * force-logout 이벤트를 전송한다.
+ * <p>이메일을 키로 SseEmitter를 관리하며, 중복 로그인 시 기존 디바이스에 force-logout 이벤트를 전송한다.
  *
  * <p>연결 타임아웃: 30분. 타임아웃/완료/오류 시 자동으로 emitter를 제거한다.
  */
@@ -55,9 +54,10 @@ public class SseEmitterService {
    * @return SseEmitter
    */
   public SseEmitter subscribe(String email, String lastEventId) {
-    User user = userFacadeService.findByEmail(email).orElseThrow(
-        () -> new ServiceException(ErrorCode.USER_NOT_FOUND)
-    );
+    User user =
+        userFacadeService
+            .findByEmail(email)
+            .orElseThrow(() -> new ServiceException(ErrorCode.USER_NOT_FOUND));
 
     String userId = String.valueOf(user.getId());
 
@@ -69,8 +69,8 @@ public class SseEmitterService {
     emitter.onError(e -> emitterRepository.deleteById(emitterId));
 
     if (!lastEventId.isEmpty()) {
-      Map<String, Object> events = emitterRepository.findAllEventCacheStartWithByUserId(
-          String.valueOf(userId));
+      Map<String, Object> events =
+          emitterRepository.findAllEventCacheStartWithByUserId(String.valueOf(userId));
       events.entrySet().stream()
           .filter(entry -> lastEventId.compareTo(entry.getKey()) < 0)
           .forEach(entry -> sendToClient(emitter, entry.getKey(), entry.getValue()));
@@ -82,31 +82,28 @@ public class SseEmitterService {
   /**
    * 알림을 전송하기 위한 메서드.
    *
-   * @param receiver         수신자.
+   * @param receiver 수신자.
    * @param notificationType 알림타입.
-   * @param message          메시지.
-   * @param productId        상품 아이디.
+   * @param message 메시지.
+   * @param productId 상품 아이디.
    */
-  public void send(User receiver, NotificationType notificationType, String message,
-      Long productId) {
-    Notification notification = notificationRepository.save(
-        Notification.create(receiver.getId(), notificationType, message, productId));
+  public void send(
+      User receiver, NotificationType notificationType, String message, Long productId) {
+    Notification notification =
+        notificationRepository.save(
+            Notification.create(receiver.getId(), notificationType, message, productId));
     String userId = String.valueOf(receiver.getId());
 
     Map<String, SseEmitter> sseEmitters = emitterRepository.findAllEmitterStartWithByUserId(userId);
 
     sseEmitters.forEach(
-        (key, emitter) -> sendToClient(emitter, key, ApiResponse.ok(NotificationResponse.from(notification)))
-    );
+        (key, emitter) ->
+            sendToClient(emitter, key, ApiResponse.ok(NotificationResponse.from(notification))));
   }
 
   private void sendToClient(SseEmitter emitter, String emitterId, Object data) {
     try {
-      emitter.send(
-          SseEmitter.event()
-              .id(emitterId)
-              .data(data)
-      );
+      emitter.send(SseEmitter.event().id(emitterId).data(data));
     } catch (IOException ex) {
       emitterRepository.deleteById(emitterId);
       log.warn("[SSE] 클라이언트 전송 실패 - emitterId: {}, 원인: {}", emitterId, ex.getMessage());
@@ -119,9 +116,10 @@ public class SseEmitterService {
    * @param email 강제 로그아웃할 사용자 이메일
    */
   public void sendForceLogout(String email) {
-    User user = userFacadeService.findByEmail(email).orElseThrow(
-        () -> new ServiceException(ErrorCode.USER_NOT_FOUND)
-    );
+    User user =
+        userFacadeService
+            .findByEmail(email)
+            .orElseThrow(() -> new ServiceException(ErrorCode.USER_NOT_FOUND));
 
     send(user, NotificationType.FORCE_LOGOUT, "다른 기기에서 로그인하여 현재 세션이 종료됩니다.", null);
   }
@@ -129,15 +127,16 @@ public class SseEmitterService {
   /**
    * 드랍 임박 알림 전송 메서드.
    *
-   * @param drops   드랍 엔티티.
+   * @param drops 드랍 엔티티.
    * @param message 전송할 메시지.
    */
   public void sendDropNotification(Drops drops, String message) {
     Product product = drops.getProduct();
 
-    Seller seller = sellerFacadeService.findById(product.getSellerId()).orElseThrow(
-        () -> new ServiceException(ErrorCode.SELLER_NOT_FOUND)
-    );
+    Seller seller =
+        sellerFacadeService
+            .findById(product.getSellerId())
+            .orElseThrow(() -> new ServiceException(ErrorCode.SELLER_NOT_FOUND));
 
     send(seller.getUser(), NotificationType.DROP_IMPENDING, message, product.getId());
   }
@@ -149,9 +148,10 @@ public class SseEmitterService {
    * @param message 전송할 메시지.
    */
   public void sendPurchaseSuccessNotification(Product product, String message) {
-    Seller seller = sellerFacadeService.findById(product.getSellerId()).orElseThrow(
-        () -> new ServiceException(ErrorCode.SELLER_NOT_FOUND)
-    );
+    Seller seller =
+        sellerFacadeService
+            .findById(product.getSellerId())
+            .orElseThrow(() -> new ServiceException(ErrorCode.SELLER_NOT_FOUND));
 
     send(seller.getUser(), NotificationType.PURCHASE_SUCCESS, message, product.getId());
   }
@@ -163,9 +163,10 @@ public class SseEmitterService {
    * @param message 전송할 메시지.
    */
   public void sendPurchaseFailNotification(Product product, String message) {
-    Seller seller = sellerFacadeService.findById(product.getSellerId()).orElseThrow(
-        () -> new ServiceException(ErrorCode.SELLER_NOT_FOUND)
-    );
+    Seller seller =
+        sellerFacadeService
+            .findById(product.getSellerId())
+            .orElseThrow(() -> new ServiceException(ErrorCode.SELLER_NOT_FOUND));
 
     send(seller.getUser(), NotificationType.PURCHASE_FAIL, message, product.getId());
   }
@@ -173,17 +174,19 @@ public class SseEmitterService {
   /**
    * 주문 추가 알림 전송 메서드.
    *
-   * @param order   주문 엔티티.
+   * @param order 주문 엔티티.
    * @param message 전송할 메시지.
    */
   public void sendOrderAddNotification(Order order, String message) {
-    User user = userFacadeService.findById(order.getUserId()).orElseThrow(
-        () -> new ServiceException(ErrorCode.USER_NOT_FOUND)
-    );
+    User user =
+        userFacadeService
+            .findById(order.getUserId())
+            .orElseThrow(() -> new ServiceException(ErrorCode.USER_NOT_FOUND));
 
-    Drops drops = dropsRepository.findByDropId(order.getDropId()).orElseThrow(
-        () -> new ServiceException(ErrorCode.DROP_NOT_FOUND)
-    );
+    Drops drops =
+        dropsRepository
+            .findByDropId(order.getDropId())
+            .orElseThrow(() -> new ServiceException(ErrorCode.DROP_NOT_FOUND));
 
     send(user, NotificationType.ORDER_ADD, message, drops.getProduct().getId());
   }
@@ -195,9 +198,10 @@ public class SseEmitterService {
    * @param message 전송할 메시지.
    */
   public void sendStockEmptyNotification(Product product, String message) {
-    Seller seller = sellerFacadeService.findById(product.getSellerId()).orElseThrow(
-        () -> new ServiceException(ErrorCode.SELLER_NOT_FOUND)
-    );
+    Seller seller =
+        sellerFacadeService
+            .findById(product.getSellerId())
+            .orElseThrow(() -> new ServiceException(ErrorCode.SELLER_NOT_FOUND));
 
     send(seller.getUser(), NotificationType.STOCK_EMPTY, message, product.getId());
   }
@@ -205,17 +209,19 @@ public class SseEmitterService {
   /**
    * 결제 성공 알림 전송 메서드.
    *
-   * @param order   주문 엔티티.
+   * @param order 주문 엔티티.
    * @param message 전송할 메시지.
    */
   public void sendPaymentSuccessNotification(Order order, String message) {
-    User user = userFacadeService.findById(order.getUserId()).orElseThrow(
-        () -> new ServiceException(ErrorCode.USER_NOT_FOUND)
-    );
+    User user =
+        userFacadeService
+            .findById(order.getUserId())
+            .orElseThrow(() -> new ServiceException(ErrorCode.USER_NOT_FOUND));
 
-    Drops drops = dropsRepository.findByDropId(order.getDropId()).orElseThrow(
-        () -> new ServiceException(ErrorCode.DROP_NOT_FOUND)
-    );
+    Drops drops =
+        dropsRepository
+            .findByDropId(order.getDropId())
+            .orElseThrow(() -> new ServiceException(ErrorCode.DROP_NOT_FOUND));
 
     send(user, NotificationType.PURCHASE_SUCCESS, message, drops.getProduct().getId());
   }
@@ -223,17 +229,19 @@ public class SseEmitterService {
   /**
    * 결제 실패 알림 전송 메서드.
    *
-   * @param order   주문 엔티티.
+   * @param order 주문 엔티티.
    * @param message 전송할 메시지.
    */
   public void sendPaymentFailNotification(Order order, String message) {
-    User user = userFacadeService.findById(order.getUserId()).orElseThrow(
-        () -> new ServiceException(ErrorCode.USER_NOT_FOUND)
-    );
+    User user =
+        userFacadeService
+            .findById(order.getUserId())
+            .orElseThrow(() -> new ServiceException(ErrorCode.USER_NOT_FOUND));
 
-    Drops drops = dropsRepository.findByDropId(order.getDropId()).orElseThrow(
-        () -> new ServiceException(ErrorCode.DROP_NOT_FOUND)
-    );
+    Drops drops =
+        dropsRepository
+            .findByDropId(order.getDropId())
+            .orElseThrow(() -> new ServiceException(ErrorCode.DROP_NOT_FOUND));
 
     send(user, NotificationType.PURCHASE_FAIL, message, drops.getProduct().getId());
   }
@@ -241,17 +249,19 @@ public class SseEmitterService {
   /**
    * 주문 취소 알림 전송 메서드.
    *
-   * @param order   주문 엔티티.
+   * @param order 주문 엔티티.
    * @param message 전송할 메시지.
    */
   public void sendOrderCancelledNotification(Order order, String message) {
-    User user = userFacadeService.findById(order.getUserId()).orElseThrow(
-        () -> new ServiceException(ErrorCode.USER_NOT_FOUND)
-    );
+    User user =
+        userFacadeService
+            .findById(order.getUserId())
+            .orElseThrow(() -> new ServiceException(ErrorCode.USER_NOT_FOUND));
 
-    Drops drops = dropsRepository.findByDropId(order.getDropId()).orElseThrow(
-        () -> new ServiceException(ErrorCode.DROP_NOT_FOUND)
-    );
+    Drops drops =
+        dropsRepository
+            .findByDropId(order.getDropId())
+            .orElseThrow(() -> new ServiceException(ErrorCode.DROP_NOT_FOUND));
 
     send(user, NotificationType.ORDER_CANCELLED, message, drops.getProduct().getId());
   }
@@ -259,17 +269,19 @@ public class SseEmitterService {
   /**
    * 주문 환불 알림 전송 메서드.
    *
-   * @param order   주문 엔티티.
+   * @param order 주문 엔티티.
    * @param message 전송할 메시지.
    */
   public void sendOrderRefundedNotification(Order order, String message) {
-    User user = userFacadeService.findById(order.getUserId()).orElseThrow(
-        () -> new ServiceException(ErrorCode.USER_NOT_FOUND)
-    );
+    User user =
+        userFacadeService
+            .findById(order.getUserId())
+            .orElseThrow(() -> new ServiceException(ErrorCode.USER_NOT_FOUND));
 
-    Drops drops = dropsRepository.findByDropId(order.getDropId()).orElseThrow(
-        () -> new ServiceException(ErrorCode.DROP_NOT_FOUND)
-    );
+    Drops drops =
+        dropsRepository
+            .findByDropId(order.getDropId())
+            .orElseThrow(() -> new ServiceException(ErrorCode.DROP_NOT_FOUND));
 
     send(user, NotificationType.ORDER_REFUNDED, message, drops.getProduct().getId());
   }

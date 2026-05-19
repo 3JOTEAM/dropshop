@@ -39,11 +39,11 @@ export const options = {
 
 // 테스트 유저 목록 (DB에 미리 생성 필요)
 const TEST_USERS = [
-  { email: 'user1@test.com', password: 'password' },
-  { email: 'user2@test.com', password: 'password' },
-  { email: 'user3@test.com', password: 'password' },
-  { email: 'user4@test.com', password: 'password' },
-  { email: 'user5@test.com', password: 'password' },
+  { email: 'user1@test.com', password: 'Password1!' },
+  { email: 'user2@test.com', password: 'Password1!' },
+  { email: 'user3@test.com', password: 'Password1!' },
+  { email: 'user4@test.com', password: 'Password1!' },
+  { email: 'user5@test.com', password: 'Password1!' },
 ];
 
 export default function () {

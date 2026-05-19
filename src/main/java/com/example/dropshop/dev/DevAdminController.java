@@ -4,8 +4,8 @@ import com.example.dropshop.common.dto.ApiResponse;
 import com.example.dropshop.domain.drops.entity.Drops;
 import com.example.dropshop.domain.drops.enums.DropsStatus;
 import com.example.dropshop.domain.drops.repository.DropsRepository;
-import com.example.dropshop.domain.drops.service.DropsStockPreemptionService;
 import com.example.dropshop.domain.drops.service.DropsStatusTransitionWorker;
+import com.example.dropshop.domain.drops.service.DropsStockPreemptionService;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -61,16 +61,19 @@ public class DevAdminController {
   @Transactional
   @PostMapping("/products/{productId}/finish-drops")
   public ResponseEntity<ApiResponse<String>> finishDropsByProduct(@PathVariable Long productId) {
-    List<Drops> drops = dropsRepository.findAllByProductIdAndStatusIn(
-        productId,
-        List.of(DropsStatus.ACTIVE, DropsStatus.SCHEDULED),
-        org.springframework.data.domain.Pageable.unpaged()
-    ).getContent();
+    List<Drops> drops =
+        dropsRepository
+            .findAllByProductIdAndStatusIn(
+                productId,
+                List.of(DropsStatus.ACTIVE, DropsStatus.SCHEDULED),
+                org.springframework.data.domain.Pageable.unpaged())
+            .getContent();
 
     drops.forEach(Drops::finish);
     dropsRepository.saveAll(drops);
 
     log.info("[DevAdmin] 상품 {} 드랍 {} 건 FINISHED 처리 완료", productId, drops.size());
-    return ResponseEntity.ok(ApiResponse.ok("상품 " + productId + " 의 드랍 " + drops.size() + "건 → FINISHED 처리 완료"));
+    return ResponseEntity.ok(
+        ApiResponse.ok("상품 " + productId + " 의 드랍 " + drops.size() + "건 → FINISHED 처리 완료"));
   }
 }

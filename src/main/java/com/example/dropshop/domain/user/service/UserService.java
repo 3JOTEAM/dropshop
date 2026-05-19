@@ -6,9 +6,13 @@ import com.example.dropshop.domain.user.dto.request.PasswordUpdateRequest;
 import com.example.dropshop.domain.user.dto.request.SignupRequest;
 import com.example.dropshop.domain.user.entity.User;
 import com.example.dropshop.domain.user.event.UserSignupEvent;
+import com.example.dropshop.domain.user.outbox.UserEventOutboxPublisher;
 import com.example.dropshop.domain.user.repository.UserRepository;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.HexFormat;
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,7 +23,7 @@ public class UserService {
 
   private final UserRepository userRepository;
   private final PasswordEncoder passwordEncoder;
-  private final ApplicationEventPublisher eventPublisher;
+  private final UserEventOutboxPublisher userEventOutboxPublisher;
 
   @Transactional
   public void signup(SignupRequest request) {
@@ -31,9 +35,10 @@ public class UserService {
     User user = User.signup(request.getEmail(), encodedPassword, request.getNickname());
     userRepository.save(user);
 
-    // DB 커밋 이후에만 Kafka 이벤트가 발행되도록 Spring 내부 이벤트로 전달.
-    // 실제 Kafka 발행은 UserSignupEventListener(AFTER_COMMIT)에서 수행된다.
-    eventPublisher.publishEvent(UserSignupEvent.of(user.getEmail()));
+    // 회원가입 이벤트를 동일 트랜잭션 내 아웃박스 테이블에 저장한다.
+    // 스케줄러(UserEventOutboxPublisher)가 5초마다 Kafka로 발행하므로
+    // DB 커밋 이후 Kafka 장애가 발생해도 이벤트가 유실되지 않는다.
+    userEventOutboxPublisher.save(UserSignupEvent.of(user.getEmail()), hashEmail(user.getEmail()));
   }
 
   @Transactional
@@ -59,5 +64,15 @@ public class UserService {
 
     user.withdraw();
     userRepository.delete(user);
+  }
+
+  private static String hashEmail(String email) {
+    try {
+      MessageDigest digest = MessageDigest.getInstance("SHA-256");
+      byte[] hash = digest.digest(email.getBytes(StandardCharsets.UTF_8));
+      return HexFormat.of().formatHex(hash);
+    } catch (NoSuchAlgorithmException e) {
+      throw new IllegalStateException("SHA-256 algorithm not available", e);
+    }
   }
 }

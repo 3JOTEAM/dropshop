@@ -57,7 +57,7 @@ public class SecurityConfig {
                     .requestMatchers("/api/sellers/images/**")
                     .hasRole("SELLER")
                     .requestMatchers("/api/sellers/**")
-                    .permitAll() // TODO: JWT 구현 후 제거
+                    .authenticated()
                     .requestMatchers("/api/products/**")
                     .permitAll()
                     .requestMatchers("/api/drops/**")
