@@ -7,6 +7,7 @@ import jakarta.annotation.PostConstruct;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import javax.crypto.SecretKey;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -14,14 +15,15 @@ public class JwtUtil {
 
   private SecretKey key;
 
-  private final String SECRET = "secret-key-secret-key-secret-key-123456"; // 최소 32byte
+  @Value("${jwt.secret}")
+  private String secret;
 
   private final long ACCESS_TOKEN_EXPIRE = 1000 * 60 * 30; // 30분
   private final long REFRESH_TOKEN_EXPIRE = 1000L * 60 * 60 * 24 * 7; // 7일
 
   @PostConstruct
   public void init() {
-    key = Keys.hmacShaKeyFor(SECRET.getBytes(StandardCharsets.UTF_8));
+    key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
   }
 
   // AccessToken 생성
