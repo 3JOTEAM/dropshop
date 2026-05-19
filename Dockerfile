@@ -2,7 +2,8 @@ FROM eclipse-temurin:17-jre-alpine
 
 WORKDIR /app
 
-RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup && \
+    apk add --no-cache wget
 
 ARG JAR_FILE=build/libs/*.jar
 COPY ${JAR_FILE} app.jar

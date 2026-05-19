@@ -6,6 +6,7 @@ import com.example.dropshop.domain.auth.service.TokenBlacklistService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -58,16 +59,19 @@ public class SecurityConfig {
                     .hasRole("SELLER")
                     .requestMatchers("/api/sellers/**")
                     .authenticated()
-                    .requestMatchers("/api/products/**")
+                    // 상품·드랍 조회는 GET만 허용, 나머지는 인증 필요
+                    .requestMatchers(HttpMethod.GET, "/api/products/**")
                     .permitAll()
-                    .requestMatchers("/api/drops/**")
+                    .requestMatchers(HttpMethod.GET, "/api/drops/**")
                     .permitAll()
+                    // 위시리스트·대기열은 인증된 사용자만
                     .requestMatchers("/api/wishlists/**")
-                    .permitAll()
+                    .authenticated()
                     .requestMatchers("/api/queues/**")
-                    .permitAll()
+                    .authenticated()
+                    // AI 추천은 인증된 사용자만
                     .requestMatchers("/api/recommendations/**")
-                    .permitAll()
+                    .authenticated()
                     .requestMatchers("/api/admin/sellers/**")
                     .hasRole("ADMIN")
                     .anyRequest()
