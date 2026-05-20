@@ -171,6 +171,15 @@ jobs:
               fi
             }
 
+            dump_diagnostics() {
+              echo "===== deploy diagnostics ====="
+              docker compose --env-file .env -f docker-compose.yml ps || true
+              docker inspect --format='container_state={{json .State}}' dropshop-app || true
+              docker inspect --format='container_health={{json .State.Health}}' dropshop-app || true
+              docker logs --tail=300 dropshop-app || true
+              echo "===== end diagnostics ====="
+            }
+
             set +x
             printf '%s\n' "${GHCR_TOKEN}" | docker login ghcr.io -u "${GHCR_USERNAME}" --password-stdin
             set -x
@@ -188,29 +197,39 @@ jobs:
 
             if [ "${pull_status}" -ne 0 ] || [ "${up_status}" -ne 0 ]; then
               echo "Deployment failed (pull=${pull_status}, up=${up_status})."
+              dump_diagnostics
               rollback
               exit 1
             fi
 
             echo "Waiting for app to become healthy (up to 10m)..."
             health_status=0
+            unhealthy_streak=0
             for i in $(seq 1 60); do
               STATUS="$(docker inspect --format='{{.State.Health.Status}}' dropshop-app 2>/dev/null || echo 'unknown')"
               echo "Attempt ${i}/60: health=${STATUS}"
               if [ "${STATUS}" = "healthy" ]; then
                 echo "Health check passed (attempt ${i})"
                 health_status=1
+                unhealthy_streak=0
                 break
               fi
               if [ "${STATUS}" = "unhealthy" ]; then
-                echo "Container marked unhealthy, aborting early."
-                break
+                unhealthy_streak=$((unhealthy_streak + 1))
+                echo "Container unhealthy streak: ${unhealthy_streak}/3"
+                if [ "${unhealthy_streak}" -ge 3 ]; then
+                  echo "Container marked unhealthy 3 times, aborting."
+                  break
+                fi
+              else
+                unhealthy_streak=0
               fi
               sleep 10
             done
 
             if [ "${health_status}" -eq 0 ]; then
               echo "Health check failed after 600s."
+              dump_diagnostics
               rollback
               exit 1
             fi

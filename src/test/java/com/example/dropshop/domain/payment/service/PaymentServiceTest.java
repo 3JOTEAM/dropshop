@@ -161,7 +161,8 @@ class PaymentServiceTest {
   @DisplayName("결제 준비 재시도 - 같은 주문의 기존 PENDING 결제가 있으면 merchantPaymentId를 바꾸지 않고 재사용한다")
   void preparePayment_existingPendingPayment_reusesOriginalMerchantPaymentId() {
     given(orderFacadeService.findOrderForPayment(1L, "test@test.com")).willReturn(order);
-    given(paymentRepository.findByMerchantPaymentId("payment-retry-456")).willReturn(Optional.empty());
+    given(paymentRepository.findByMerchantPaymentId("payment-retry-456"))
+        .willReturn(Optional.empty());
     given(paymentRepository.findByOrderId(1L)).willReturn(Optional.of(payment));
 
     Payment result =

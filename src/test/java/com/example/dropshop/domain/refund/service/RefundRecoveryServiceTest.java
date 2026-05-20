@@ -94,7 +94,8 @@ class RefundRecoveryServiceTest {
     ReflectionTestUtils.setField(approvedRefund, "id", 1L);
     approvedRefund.approve();
 
-    given(refundRepository.findById(1L)).willReturn(Optional.of(refund), Optional.of(approvedRefund));
+    given(refundRepository.findById(1L))
+        .willReturn(Optional.of(refund), Optional.of(approvedRefund));
     given(paymentRepository.findById(1L)).willReturn(Optional.of(payment));
     given(portOneClient.getPayment("payment-test-123"))
         .willReturn(portOnePayment("PAID", "tx-123", "79000"));
