@@ -13,10 +13,12 @@ env:
   APP_NAME: dropshop
   DEPLOY_DIR: ${{ vars.EC2_DEPLOY_DIR }}
   MIN_DISK_MB: ${{ vars.EC2_MIN_DISK_MB || '1024' }}
+  CD_ENABLED: ${{ vars.CD_ENABLED || 'false' }}
 
 jobs:
   build-and-push:
     name: build-and-push-image
+    if: ${{ env.CD_ENABLED == 'true' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -75,6 +77,7 @@ jobs:
 
   deploy-ec2:
     name: deploy-compose-to-ec2
+    if: ${{ env.CD_ENABLED == 'true' }}
     runs-on: ubuntu-latest
     needs: build-and-push
     environment: production
