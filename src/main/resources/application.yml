@@ -99,4 +99,3 @@ jwt:
 openai:
   api-key: "dummy"
   embedding-model: "text-embedding-3-small"
-  c
